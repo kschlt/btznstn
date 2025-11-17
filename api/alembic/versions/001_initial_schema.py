@@ -24,17 +24,17 @@ def upgrade() -> None:
     affiliation_enum = postgresql.ENUM(
         "Ingeborg", "Cornelia", "Angelika", name="affiliation_enum"
     )
-    affiliation_enum.create(op.get_bind())
+    affiliation_enum.create(op.get_bind(), checkfirst=True)
 
     status_enum = postgresql.ENUM(
         "Pending", "Denied", "Confirmed", "Canceled", name="status_enum"
     )
-    status_enum.create(op.get_bind())
+    status_enum.create(op.get_bind(), checkfirst=True)
 
     decision_enum = postgresql.ENUM(
         "NoResponse", "Approved", "Denied", name="decision_enum"
     )
-    decision_enum.create(op.get_bind())
+    decision_enum.create(op.get_bind(), checkfirst=True)
 
     # Create approver_parties table
     op.create_table(
