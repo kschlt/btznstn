@@ -118,7 +118,7 @@ def upgrade() -> None:
         """
     )
 
-    # Create trigger to update updated_at
+    # Create trigger to update updated_at (separate statements for asyncpg)
     op.execute(
         """
         CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -127,12 +127,15 @@ def upgrade() -> None:
             NEW.updated_at = NOW();
             RETURN NEW;
         END;
-        $$ LANGUAGE plpgsql;
-
+        $$ LANGUAGE plpgsql
+        """
+    )
+    op.execute(
+        """
         CREATE TRIGGER update_bookings_updated_at
         BEFORE UPDATE ON bookings
         FOR EACH ROW
-        EXECUTE FUNCTION update_updated_at_column();
+        EXECUTE FUNCTION update_updated_at_column()
         """
     )
 
