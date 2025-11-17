@@ -405,7 +405,7 @@ See `data-model.md` for full schema.
 
 ---
 
-## Frontend Framework
+## Web Framework
 
 ### Framework Options
 
@@ -707,8 +707,8 @@ See `data-model.md` for full schema.
 | Component | Recommendation | Alternatives |
 |-----------|----------------|--------------|
 | Database | PostgreSQL | MySQL, MariaDB |
-| Backend Framework | Node.js (Express) or Python (FastAPI) | Ruby (Rails), Go, Java |
-| Frontend Framework | React, Vue, or Svelte | Plain JS |
+| API Framework | Node.js (Express) or Python (FastAPI) | Ruby (Rails), Go, Java |
+| Web Framework | React, Vue, or Svelte | Plain JS |
 | Email Service | SendGrid or AWS SES | Mailgun, Postmark |
 | Hosting | Heroku, Render, AWS | Any reliable host |
 | Rate Limiting | Redis | In-memory, DB |
@@ -756,13 +756,13 @@ See `data-model.md` for full schema.
 
 ## Technology Stack (Example)
 
-**Backend:**
+**API:**
 - Node.js + Express (or Python + FastAPI)
 - PostgreSQL
 - Redis (rate limiting, optional caching)
 - JWT for tokens
 
-**Frontend:**
+**Web:**
 - React (or Vue/Svelte)
 - CSS Modules or Tailwind CSS
 - Fetch API for HTTP requests

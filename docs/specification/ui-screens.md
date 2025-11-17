@@ -432,7 +432,7 @@ Each booking displayed in calendar cell shows:
 5. **If cooldown active (BR-021):**
    - "Bitte warte kurz – wir haben dir deinen persönlichen Link gerade erst gesendet."
 
-**Backend Behavior:**
+**API Behavior:**
 - If email exists, resend existing token (don't generate new)
 - If email doesn't exist, still show success (no enumeration)
 - Apply 60-second cooldown per email/IP

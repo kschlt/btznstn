@@ -1,4 +1,4 @@
-# ADR-001: Backend Framework - FastAPI
+# ADR-001: API Framework - FastAPI
 
 **Status:** Accepted
 **Date:** 2025-01-17
@@ -219,7 +219,7 @@ async def list_bookings(db: AsyncSession = Depends(get_db)):
 
 ✅ **AI can implement quickly** - FastAPI is AI-friendly
 ✅ **Type-safe API** - Pydantic validates everything
-✅ **Auto-generated docs** - Frontend team (AI) can reference
+✅ **Auto-generated docs** - Web team (AI) can reference
 ✅ **Fast development** - Less boilerplate than alternatives
 ✅ **Modern async** - Non-blocking email/DB operations
 ✅ **Production-ready** - Mature, proven framework
@@ -243,7 +243,7 @@ async def list_bookings(db: AsyncSession = Depends(get_db)):
 ### Project Structure
 
 ```
-/backend/
+/api/
 ├── app/
 │   ├── main.py              # FastAPI app creation
 │   ├── api/

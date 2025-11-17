@@ -40,13 +40,13 @@ Test-driven implementation plan for the Betzenstein booking application. Each ph
 **Tests:** Email sending, templates
 - [Phase 4 Details](phase-4-email-integration.md)
 
-### Phase 5: Frontend Calendar
+### Phase 5: Web Calendar
 **Goal:** Calendar UI, booking display
 **Duration:** 3-4 days
 **Tests:** E2E calendar navigation, responsive
 - [Phase 5 Details](phase-5-frontend-calendar.md)
 
-### Phase 6: Frontend Booking
+### Phase 6: Web Booking
 **Goal:** Create/edit forms, validation
 **Duration:** 3-4 days
 **Tests:** Form validation, submission
@@ -94,7 +94,7 @@ Feature: Create Booking
 
 ### 2. Write Failing Tests
 
-**Backend (Pytest):**
+**API (Pytest):**
 ```python
 @pytest.mark.asyncio
 async def test_create_booking_api(client):
@@ -113,7 +113,7 @@ async def test_create_booking_api(client):
     assert data["total_days"] == 5
 ```
 
-**Frontend (Playwright):**
+**Web (Playwright):**
 ```typescript
 test('create booking via form', async ({ page }) => {
   await page.goto('/')
@@ -147,7 +147,7 @@ test('create booking via form', async ({ page }) => {
 
 ## Testing Strategy
 
-### Backend Tests
+### API Tests
 
 **Unit Tests (Fast):**
 - Business logic functions
@@ -168,7 +168,7 @@ pytest tests/integration/ # Integration tests
 pytest --cov=app         # With coverage
 ```
 
-### Frontend Tests
+### Web Tests
 
 **E2E Tests (Playwright):**
 - Full user journeys
@@ -230,9 +230,9 @@ Phase 3 (Approval Flow)   │
     ↓                     │
 Phase 4 (Email) ──────────┘
     ↓
-Phase 5 (Frontend Calendar)
+Phase 5 (Web Calendar)
     ↓
-Phase 6 (Frontend Booking)
+Phase 6 (Web Booking)
     ↓
 Phase 7 (Approver Interface)
     ↓
@@ -288,7 +288,7 @@ jobs:
 
 1. **Pick a phase** - Start with Phase 0
 2. **Read phase doc** - Understand user stories + scenarios
-3. **Write tests** - Backend + frontend tests (failing)
+3. **Write tests** - API + frontend tests (failing)
 4. **Implement** - Code until tests pass
 5. **Refactor** - Clean up, maintain test coverage
 6. **Commit** - `git commit -m "feat: implement user story X"`

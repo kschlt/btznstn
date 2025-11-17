@@ -138,7 +138,7 @@ stateDiagram-v2
 
 **Archive Access:**
 - No end-user interface
-- Backend/admin only (if needed)
+- API/admin only (if needed)
 - Purged per BR-013 archival policy
 
 **Visibility:**

@@ -12,7 +12,7 @@ Establish project scaffolding, development tools, and CI/CD pipeline.
 
 ## User Stories
 
-### US-0.1: Backend Project Setup
+### US-0.1: API Project Setup
 
 **As a** developer
 **I want** a properly configured FastAPI project
@@ -21,7 +21,7 @@ Establish project scaffolding, development tools, and CI/CD pipeline.
 **Acceptance Criteria:**
 
 ```gherkin
-Feature: Backend Project Setup
+Feature: API Project Setup
 
   Scenario: Project structure created
     Given I clone the repository
@@ -59,7 +59,7 @@ Feature: Backend Project Setup
 ```
 
 **Tasks:**
-- [ ] Create `backend/` directory structure
+- [ ] Create `api/` directory structure
 - [ ] Add `app/main.py` with FastAPI app
 - [ ] Configure `pyproject.toml` with dependencies
 - [ ] Set up `mypy.ini` with strict mode
@@ -78,7 +78,7 @@ pytest tests/unit/test_main.py
 
 ---
 
-### US-0.2: Frontend Project Setup
+### US-0.2: Web Project Setup
 
 **As a** developer
 **I want** a properly configured Next.js project
@@ -87,7 +87,7 @@ pytest tests/unit/test_main.py
 **Acceptance Criteria:**
 
 ```gherkin
-Feature: Frontend Project Setup
+Feature: Web Project Setup
 
   Scenario: Next.js project created
     Given I clone the repository
@@ -217,7 +217,7 @@ volumes:
 ```gherkin
 Feature: CI/CD Pipeline
 
-  Scenario: Backend CI passes
+  Scenario: API CI passes
     Given I push code to GitHub
     When GitHub Actions runs
     Then it should:
@@ -228,7 +228,7 @@ Feature: CI/CD Pipeline
       | Run pytest           |
     And all steps should pass
 
-  Scenario: Frontend CI passes
+  Scenario: Web CI passes
     Given I push code to GitHub
     When GitHub Actions runs
     Then it should:
@@ -248,7 +248,7 @@ Feature: CI/CD Pipeline
 
 **.github/workflows/backend-ci.yml:**
 ```yaml
-name: Backend CI
+name: API CI
 
 on: [push, pull_request]
 
@@ -306,8 +306,8 @@ jobs:
 
 ## Definition of Done
 
-- [ ] Backend starts: `uvicorn app.main:app --reload`
-- [ ] Frontend starts: `npm run dev`
+- [ ] API starts: `uvicorn app.main:app --reload`
+- [ ] Web starts: `npm run dev`
 - [ ] Type checking passes: `mypy app/` and `npm run type-check`
 - [ ] Linting passes: `ruff check app/` and `npm run lint`
 - [ ] Database migrations work: `alembic upgrade head`
@@ -318,7 +318,7 @@ jobs:
 
 ## Testing Commands
 
-**Backend:**
+**API:**
 ```bash
 cd backend
 python -m venv venv
@@ -329,7 +329,7 @@ mypy app/                      # Should pass
 ruff check app/                # Should pass
 ```
 
-**Frontend:**
+**Web:**
 ```bash
 cd frontend
 npm install

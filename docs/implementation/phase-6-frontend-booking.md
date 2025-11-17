@@ -1,4 +1,4 @@
-# Phase 6: Frontend Booking
+# Phase 6: Web Booking
 
 ## Goal
 Build booking create/edit forms with validation.

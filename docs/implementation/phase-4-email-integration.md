@@ -70,4 +70,4 @@ Feature: Approval Notifications
 - [ ] Tests mock email sending
 - [ ] Manual test: receive actual emails
 
-**Next:** [Phase 5: Frontend Calendar](phase-5-frontend-calendar.md)
+**Next:** [Phase 5: Web Calendar](phase-5-frontend-calendar.md)

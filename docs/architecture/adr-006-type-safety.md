@@ -47,13 +47,13 @@ def create_booking(data: BookingCreate) -> Booking:
 
 We will enforce strict type safety across the entire stack:
 
-### Backend (Python)
+### API (Python)
 - **Mypy** in strict mode for static type checking
 - **Pydantic v2** for runtime validation and serialization
 - **Type hints** on all functions, methods, and variables
 - **Ruff** for linting and enforcing type annotation coverage
 
-### Frontend (TypeScript)
+### Web (TypeScript)
 - **TypeScript strict mode** for static type checking
 - **Zod** for runtime validation of API responses and form data
 - **ESLint** with TypeScript rules
@@ -511,7 +511,7 @@ async function createBooking(data: paths["/bookings"]["post"]["requestBody"]["co
 }
 ```
 
-**AI benefit:** Backend changes → Frontend types update automatically.
+**AI benefit:** API changes → Web types update automatically.
 
 ---
 
@@ -588,7 +588,7 @@ async function createBooking(data: paths["/bookings"]["post"]["requestBody"]["co
 ✅ **Better IDE support** - Autocomplete, hover hints
 ✅ **Fewer bugs** - Invalid states unrepresentable
 ✅ **Faster feedback loops** - Instant type errors in editor
-✅ **Generated API types** - Backend ↔ Frontend sync
+✅ **Generated API types** - API ↔ Web sync
 ✅ **Form validation free** - Zod + Pydantic handle it
 
 ### Negative
@@ -607,7 +607,7 @@ async function createBooking(data: paths["/bookings"]["post"]["requestBody"]["co
 
 ## Implementation Notes
 
-### Backend Setup
+### API Setup
 
 #### 1. Install Dependencies
 ```bash
@@ -650,7 +650,7 @@ ruff check src/
 ruff check --fix src/
 ```
 
-### Frontend Setup
+### Web Setup
 
 #### 1. Install Dependencies
 ```bash
@@ -719,7 +719,7 @@ npm run generate-api-types
 
 ### Example: End-to-End Type Safety
 
-**Backend (FastAPI + Pydantic):**
+**API (FastAPI + Pydantic):**
 ```python
 # models/booking.py
 from pydantic import BaseModel, EmailStr, Field
@@ -749,7 +749,7 @@ def create_booking(data: BookingCreate) -> Booking:
     return booking
 ```
 
-**Frontend (TypeScript + Zod):**
+**Web (TypeScript + Zod):**
 ```typescript
 // schemas/booking.ts
 import { z } from "zod"
@@ -793,10 +793,10 @@ function BookingForm() {
 ```
 
 **Result:**
-- Backend validates with Pydantic, type-checks with Mypy
-- Frontend validates with Zod, type-checks with TypeScript
+- API validates with Pydantic, type-checks with Mypy
+- Web validates with Zod, type-checks with TypeScript
 - OpenAPI schema generated from Pydantic models
-- Frontend types generated from OpenAPI schema
+- Web types generated from OpenAPI schema
 - End-to-end type safety from database to UI
 
 ---
@@ -875,8 +875,8 @@ echo "✅ All type checks passed!"
 
 ## Related ADRs
 
-- [ADR-001: Backend Framework](adr-001-backend-framework.md) - FastAPI + Pydantic integration
-- [ADR-002: Frontend Framework](adr-002-frontend-framework.md) - Next.js + TypeScript strict mode
+- [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI + Pydantic integration
+- [ADR-002: Web Framework](adr-002-frontend-framework.md) - Next.js + TypeScript strict mode
 - [ADR-008: Testing Strategy](adr-008-testing-strategy.md) - Type-safe test fixtures
 
 ---

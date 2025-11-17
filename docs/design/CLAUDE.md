@@ -77,7 +77,7 @@ holidays (optional) # German holidays
 
 **Flow:**
 1. User creates booking → backend generates requester token → email sent
-2. Backend generates approver tokens → emails sent to 3 approvers
+2. API generates approver tokens → emails sent to 3 approvers
 3. User clicks link with token → backend validates → performs action
 
 ## Component Guidelines

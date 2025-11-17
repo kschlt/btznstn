@@ -503,7 +503,7 @@ Open DevTools → Responsive mode → 375px width.
 
 ## Related ADRs
 
-- [ADR-002: Frontend Framework](adr-002-frontend-framework.md) - Next.js integration
+- [ADR-002: Web Framework](adr-002-frontend-framework.md) - Next.js integration
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md) - TypeScript strict mode
 
 ---
