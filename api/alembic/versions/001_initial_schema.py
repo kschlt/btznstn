@@ -20,21 +20,39 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Create initial database schema."""
-    # Create enums
+    # Create enums using raw SQL with IF NOT EXISTS
+    op.execute(
+        """
+        DO $$ BEGIN
+            CREATE TYPE affiliation_enum AS ENUM ('Ingeborg', 'Cornelia', 'Angelika');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+
+        DO $$ BEGIN
+            CREATE TYPE status_enum AS ENUM ('Pending', 'Denied', 'Confirmed', 'Canceled');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+
+        DO $$ BEGIN
+            CREATE TYPE decision_enum AS ENUM ('NoResponse', 'Approved', 'Denied');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+        """
+    )
+
+    # Create Python enum references (without creating the type in DB)
     affiliation_enum = postgresql.ENUM(
-        "Ingeborg", "Cornelia", "Angelika", name="affiliation_enum"
+        "Ingeborg", "Cornelia", "Angelika", name="affiliation_enum", create_type=False
     )
-    affiliation_enum.create(op.get_bind(), checkfirst=True)
-
     status_enum = postgresql.ENUM(
-        "Pending", "Denied", "Confirmed", "Canceled", name="status_enum"
+        "Pending", "Denied", "Confirmed", "Canceled", name="status_enum", create_type=False
     )
-    status_enum.create(op.get_bind(), checkfirst=True)
-
     decision_enum = postgresql.ENUM(
-        "NoResponse", "Approved", "Denied", name="decision_enum"
+        "NoResponse", "Approved", "Denied", name="decision_enum", create_type=False
     )
-    decision_enum.create(op.get_bind(), checkfirst=True)
 
     # Create approver_parties table
     op.create_table(
