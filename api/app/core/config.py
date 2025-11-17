@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # Application
     python_env: str = "development"
     log_level: str = "INFO"
-    secret_key: str = "your-secret-key-here-generate-with-openssl-rand-hex-32"
+    secret_key: str = "your-secret-key-here-generate-with-openssl-rand-hex-32"  # noqa: S105
 
     # CORS
     allowed_origins: list[str] = ["http://localhost:3000"]
