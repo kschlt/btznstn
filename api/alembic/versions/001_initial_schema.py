@@ -20,26 +20,32 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Create initial database schema."""
-    # Create enums using raw SQL with IF NOT EXISTS
+    # Create enums using raw SQL with IF NOT EXISTS (separate statements for asyncpg)
     op.execute(
         """
         DO $$ BEGIN
             CREATE TYPE affiliation_enum AS ENUM ('Ingeborg', 'Cornelia', 'Angelika');
         EXCEPTION
             WHEN duplicate_object THEN null;
-        END $$;
-
+        END $$
+        """
+    )
+    op.execute(
+        """
         DO $$ BEGIN
             CREATE TYPE status_enum AS ENUM ('Pending', 'Denied', 'Confirmed', 'Canceled');
         EXCEPTION
             WHEN duplicate_object THEN null;
-        END $$;
-
+        END $$
+        """
+    )
+    op.execute(
+        """
         DO $$ BEGIN
             CREATE TYPE decision_enum AS ENUM ('NoResponse', 'Approved', 'Denied');
         EXCEPTION
             WHEN duplicate_object THEN null;
-        END $$;
+        END $$
         """
     )
 
