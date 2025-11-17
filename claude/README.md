@@ -1,8 +1,23 @@
 # Claude Code Guide for This Repository
 
+## Quick Start
+
+**New to this repository?** Start at [`/CLAUDE.md`](../CLAUDE.md) - the main entry point for AI agents.
+
+**Each documentation section also has its own `CLAUDE.md` file** with context-specific guidance:
+- `/docs/foundation/CLAUDE.md`
+- `/docs/requirements/CLAUDE.md`
+- `/docs/specification/CLAUDE.md`
+- `/docs/constraints/CLAUDE.md`
+- `/docs/architecture/CLAUDE.md`
+- `/docs/design/CLAUDE.md`
+- `/docs/implementation/CLAUDE.md`
+
+---
+
 ## Purpose
 
-This file provides guidance for future Claude Code sessions working on the Betzenstein booking & approval application.
+This file provides **detailed workflow guidance** for Claude Code sessions. For a quick overview, see [`/CLAUDE.md`](../CLAUDE.md) instead.
 
 ---
 
