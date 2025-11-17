@@ -176,7 +176,7 @@ def upgrade() -> None:
     op.create_index(
         "idx_timeline_when",
         "timeline_events",
-        [sa.text("when DESC")],
+        [sa.text('"when" DESC')],
     )
 
 
