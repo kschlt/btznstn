@@ -517,7 +517,7 @@ Send test email to Gmail, check:
 
 ## Related ADRs
 
-- [ADR-001: Backend Framework](adr-001-backend-framework.md) - FastAPI integration
+- [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI integration
 - [ADR-007: Deployment Strategy](adr-007-deployment.md) - Environment variables
 
 ---

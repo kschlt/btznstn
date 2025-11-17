@@ -1,6 +1,6 @@
-# Betzenstein Booking API - Backend
+# Betzenstein Booking API
 
-FastAPI backend for the Betzenstein booking and approval system.
+FastAPI REST API for the Betzenstein booking and approval system.
 
 ## Quick Start
 
@@ -70,7 +70,7 @@ ruff check app/
 ## Project Structure
 
 ```
-backend/
+api/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py           # FastAPI application

@@ -588,7 +588,7 @@ FastAPI auto-generates OpenAPI spec.
 - OpenAPI JSON: `https://api.betzenstein.app/openapi.json`
 
 **Usage:**
-- Frontend can generate type-safe client from `/openapi.json`
+- Web can generate type-safe client from `/openapi.json`
 - AI can reference `/docs` for implementation
 
 ---
@@ -678,7 +678,7 @@ async def test_create_booking_api(client: AsyncClient):
 
 ## Implementation Checklist
 
-Backend implementation order:
+API implementation order:
 
 - [ ] FastAPI app setup
 - [ ] Database models (SQLAlchemy)
@@ -703,7 +703,7 @@ Backend implementation order:
 - [Business Rules](../foundation/business-rules.md) - BR-001 to BR-029
 - [Error Handling](../specification/error-handling.md) - Error messages
 - [Authentication Flow](authentication-flow.md) - Token generation/validation
-- [ADR-001: Backend Framework](../architecture/adr-001-backend-framework.md) - FastAPI
+- [ADR-001: API Framework](../architecture/adr-001-backend-framework.md) - FastAPI
 - [ADR-003: Database & ORM](../architecture/adr-003-database-orm.md) - PostgreSQL + SQLAlchemy
 
 ---

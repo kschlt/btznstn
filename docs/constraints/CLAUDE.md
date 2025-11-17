@@ -81,8 +81,8 @@ Check constraints when:
 ### Deployment
 
 **Platforms:**
-- Backend: Fly.io (Frankfurt region)
-- Frontend: Vercel (global CDN)
+- API: Fly.io (Frankfurt region)
+- Web: Vercel (global CDN)
 - Database: Fly.io Postgres (co-located with backend)
 - Email: Resend
 

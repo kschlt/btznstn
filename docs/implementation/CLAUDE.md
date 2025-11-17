@@ -25,8 +25,8 @@ BDD (Behavior-Driven Development) implementation roadmap:
 **For every feature:**
 
 1. **Write failing tests first**
-   - Backend: Pytest (unit + integration)
-   - Frontend: Playwright (E2E)
+   - API: Pytest (unit + integration)
+   - Web: Playwright (E2E)
 
 2. **Implement features**
    - Follow specifications
@@ -55,9 +55,9 @@ Phase 3 (Approval Flow)  │
     ↓                    │
 Phase 4 (Email) ─────────┘
     ↓
-Phase 5 (Frontend Calendar)
+Phase 5 (Web Calendar)
     ↓
-Phase 6 (Frontend Booking)
+Phase 6 (Web Booking)
     ↓
 Phase 7 (Approver Interface)
     ↓
@@ -70,17 +70,17 @@ Phase 8 (Polish & Production)
 
 **Every phase must have:**
 - Gherkin scenarios (Given/When/Then)
-- Backend tests (pytest)
-- Frontend tests (playwright) if UI involved
+- API tests (pytest)
+- Web tests (playwright) if UI involved
 - ≥80% code coverage target
 
 **Run tests:**
 ```bash
-# Backend
+# API
 pytest tests/unit/
 pytest tests/integration/
 
-# Frontend
+# Web
 npx playwright test
 npx playwright test --project="iPhone 8"
 ```
@@ -88,7 +88,7 @@ npx playwright test --project="iPhone 8"
 ## Definition of Done (Per Phase)
 
 - [ ] All Gherkin scenarios pass
-- [ ] Backend + frontend tests pass
+- [ ] API + frontend tests pass
 - [ ] Type checks pass (mypy + tsc)
 - [ ] Linting passes (ruff + eslint)
 - [ ] Code coverage ≥80%
@@ -139,7 +139,7 @@ npx playwright test --project="iPhone 8"
 - Retry 3 times with backoff (BR-022)
 - Use exact German copy from notifications.md
 
-**Phases 5-7 (Frontend):**
+**Phases 5-7 (Web):**
 - Design for 375px first (mobile)
 - 44×44pt tap targets
 - No hover dependencies

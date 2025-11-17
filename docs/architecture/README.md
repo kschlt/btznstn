@@ -10,8 +10,8 @@ This directory contains Architecture Decision Records (ADRs) and system architec
 
 The Betzenstein application is a **distributed web application** with:
 
-- **Backend API** (FastAPI on Fly.io)
-- **Frontend SPA** (Next.js on Vercel)
+- **API API** (FastAPI on Fly.io)
+- **Web SPA** (Next.js on Vercel)
 - **Database** (PostgreSQL on Fly.io, co-located with backend)
 - **Email Service** (Resend)
 
@@ -26,7 +26,7 @@ The Betzenstein application is a **distributed web application** with:
          ↓
 ┌─────────────────────────┐
 │   Vercel (CDN/Edge)     │
-│   Next.js 14 Frontend   │
+│   Next.js 14 Web   │
 │   - Calendar UI         │
 │   - Forms               │
 │   - Approver Views      │
@@ -36,7 +36,7 @@ The Betzenstein application is a **distributed web application** with:
 ┌──────────────────────────────────────┐
 │   Fly.io (Frankfurt)                 │
 │  ┌────────────────────────────────┐  │
-│  │   FastAPI Backend              │  │
+│  │   FastAPI API              │  │
 │  │   - REST API                   │  │
 │  │   - Business Logic             │  │
 │  │   - Token Auth                 │  │
@@ -69,8 +69,8 @@ The Betzenstein application is a **distributed web application** with:
 
 | Component | Technology | Hosting |
 |-----------|-----------|---------|
-| **Backend** | FastAPI + Python 3.11+ | Fly.io (Frankfurt) |
-| **Frontend** | Next.js 14 (App Router) | Vercel (Global CDN) |
+| **API** | FastAPI + Python 3.11+ | Fly.io (Frankfurt) |
+| **Web** | Next.js 14 (App Router) | Vercel (Global CDN) |
 | **Database** | PostgreSQL 15+ | Fly.io Postgres (Frankfurt, co-located) |
 | **ORM** | SQLAlchemy 2.0 | - |
 | **UI** | Shadcn/ui + Tailwind CSS | - |
@@ -89,8 +89,8 @@ ADRs document significant architectural decisions with context, rationale, and c
 
 ### Core Stack Decisions
 
-- [ADR-001: Backend Framework](adr-001-backend-framework.md) - Why FastAPI
-- [ADR-002: Frontend Framework](adr-002-frontend-framework.md) - Why Next.js App Router
+- [ADR-001: API Framework](adr-001-backend-framework.md) - Why FastAPI
+- [ADR-002: Web Framework](adr-002-frontend-framework.md) - Why Next.js App Router
 - [ADR-003: Database & ORM](adr-003-database-orm.md) - Why PostgreSQL + SQLAlchemy on Fly.io
 - [ADR-004: Email Service](adr-004-email-service.md) - Why Resend
 - [ADR-005: UI Framework](adr-005-ui-framework.md) - Why Shadcn/ui + Tailwind
@@ -115,12 +115,12 @@ ADRs document significant architectural decisions with context, rationale, and c
 
 ### 2. Type Safety Throughout
 
-**Backend:**
+**API:**
 - Python type hints (PEP 484)
 - Mypy strict mode
 - Pydantic v2 for runtime validation
 
-**Frontend:**
+**Web:**
 - TypeScript strict mode
 - Zod for runtime validation
 - Type-safe API client
@@ -175,7 +175,7 @@ ADRs document significant architectural decisions with context, rationale, and c
 
 ## System Components
 
-### Backend (FastAPI on Fly.io)
+### API (FastAPI on Fly.io)
 
 **Responsibilities:**
 - REST API endpoints
@@ -191,7 +191,7 @@ ADRs document significant architectural decisions with context, rationale, and c
 - Pydantic validation on all inputs
 - SQLAlchemy ORM with migrations (Alembic)
 
-### Frontend (Next.js on Vercel)
+### Web (Next.js on Vercel)
 
 **Responsibilities:**
 - Calendar UI (Month/Year views)
@@ -247,17 +247,17 @@ ADRs document significant architectural decisions with context, rationale, and c
 
 ```
 User (Browser)
-  → Frontend: Fill create form
-  → Frontend: Validate with Zod
-  → Backend API: POST /bookings
-  → Backend: Validate with Pydantic
-  → Backend: Check conflicts (BR-002, BR-029)
-  → Backend: Create booking + approvals
+  → Web: Fill create form
+  → Web: Validate with Zod
+  → API API: POST /bookings
+  → API: Validate with Pydantic
+  → API: Check conflicts (BR-002, BR-029)
+  → API: Create booking + approvals
   → Database: INSERT transactions
-  → Backend: Send notification emails
+  → API: Send notification emails
   → Resend: Deliver emails
-  → Backend: Return booking data
-  → Frontend: Show success + redirect
+  → API: Return booking data
+  → Web: Show success + redirect
 ```
 
 ### 2. Approve Booking Flow
@@ -265,15 +265,15 @@ User (Browser)
 ```
 Approver (Email)
   → Click action link with token
-  → Backend API: POST /bookings/{id}/approve?token=xxx
-  → Backend: Validate token
-  → Backend: Check current state
-  → Backend: Update approval record
-  → Backend: Check if final approval
-  → Backend: Send notification emails
+  → API API: POST /bookings/{id}/approve?token=xxx
+  → API: Validate token
+  → API: Check current state
+  → API: Update approval record
+  → API: Check if final approval
+  → API: Send notification emails
   → Resend: Deliver emails
-  → Backend: Redirect to result page
-  → Frontend: Show result
+  → API: Redirect to result page
+  → Web: Show result
 ```
 
 ---
@@ -328,25 +328,25 @@ if booking.requester_email != token.email:
 ### Environments
 
 1. **Development** (Local)
-   - Backend: `localhost:8000`
-   - Frontend: `localhost:3000`
+   - API: `localhost:8000`
+   - Web: `localhost:3000`
    - Database: Local PostgreSQL or Fly.io dev DB
 
 2. **Staging** (Optional, TBD)
-   - Backend: `staging-api.betzenstein.app` (Fly.io)
-   - Frontend: `staging.betzenstein.app` (Vercel)
+   - API: `staging-api.betzenstein.app` (Fly.io)
+   - Web: `staging.betzenstein.app` (Vercel)
    - Database: Fly.io Postgres staging DB
 
 3. **Production**
-   - Backend: `api.betzenstein.app` (Fly.io, Frankfurt region)
-   - Frontend: `betzenstein.app` (Vercel, global CDN)
+   - API: `api.betzenstein.app` (Fly.io, Frankfurt region)
+   - Web: `betzenstein.app` (Vercel, global CDN)
    - Database: Fly.io Postgres (Frankfurt region, co-located)
 
 ### CI/CD Pipeline
 
 **GitHub Actions workflows:**
-- Backend: Build → Lint (Ruff) → Type check (mypy) → Test (pytest) → Deploy (Fly.io)
-- Frontend: Build → Lint (ESLint) → Type check (tsc) → Test (Playwright) → Deploy (Vercel)
+- API: Build → Lint (Ruff) → Type check (mypy) → Test (pytest) → Deploy (Fly.io)
+- Web: Build → Lint (ESLint) → Type check (tsc) → Test (Playwright) → Deploy (Vercel)
 
 **Branch Strategy:**
 - Feature branches → PR to `main`
@@ -474,7 +474,7 @@ if booking.requester_email != token.email:
 
 ---
 
-## Frontend Architecture Principles
+## Web Architecture Principles
 
 ### Component Structure
 

@@ -18,8 +18,8 @@ Read before implementation:
 
 | Component | Technology | Why (see ADR) |
 |-----------|-----------|---------------|
-| Backend | FastAPI + Python 3.11+ | ADR-001 |
-| Frontend | Next.js 14 (App Router) | ADR-002 |
+| API | FastAPI + Python 3.11+ | ADR-001 |
+| Web | Next.js 14 (App Router) | ADR-002 |
 | Database | PostgreSQL 15+ on Fly.io | ADR-003 |
 | ORM | SQLAlchemy 2.0 | ADR-003 |
 | Email | Resend | ADR-004 |
@@ -58,13 +58,13 @@ Model Layer (ORM models)
 
 ## Key Patterns
 
-**Backend:**
+**API:**
 - Repository pattern for data access
 - Service layer for business logic
 - Pydantic models for validation
 - Async/await for I/O
 
-**Frontend:**
+**Web:**
 - Server Components (Next.js App Router)
 - Shadcn/ui components (copy-paste)
 - React Query for server state
@@ -72,8 +72,8 @@ Model Layer (ORM models)
 
 **Testing:**
 - Test-first (BDD)
-- Backend: Pytest (unit + integration)
-- Frontend: Playwright (E2E)
+- API: Pytest (unit + integration)
+- Web: Playwright (E2E)
 
 ## Database Architecture
 

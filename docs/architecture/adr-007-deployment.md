@@ -21,14 +21,14 @@ We need a deployment strategy for the booking application that:
 
 ### Requirements
 
-**Backend deployment:**
+**API deployment:**
 - EU region (GDPR, low latency for German users)
 - PostgreSQL connection from backend
 - Email service (Resend) API access
 - Environment variables (secrets)
 - Health checks + auto-restart
 
-**Frontend deployment:**
+**Web deployment:**
 - Global CDN (fast page loads)
 - Edge caching for static assets
 - Preview deployments for PRs
@@ -51,8 +51,8 @@ We need a deployment strategy for the booking application that:
 
 We will deploy using:
 
-- **Backend:** Fly.io (Frankfurt region)
-- **Frontend:** Vercel (global CDN)
+- **API:** Fly.io (Frankfurt region)
+- **Web:** Vercel (global CDN)
 - **Database:** Fly.io Postgres (Frankfurt region, co-located with backend)
 - **CI/CD:** GitHub Actions
 
@@ -60,7 +60,7 @@ We will deploy using:
 
 ## Rationale
 
-### 1. Fly.io - Backend Hosting
+### 1. Fly.io - API Hosting
 
 **Why Fly.io:**
 
@@ -161,7 +161,7 @@ fly regions add ams  # Add Amsterdam region
 
 **Sufficient for MVP.**
 
-### 2. Vercel - Frontend Hosting
+### 2. Vercel - Web Hosting
 
 **Why Vercel:**
 
@@ -245,10 +245,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 **Why Fly.io Postgres:**
 
-#### a) Co-Located with Backend
+#### a) Co-Located with API
 
 **Same platform benefits:**
-- ✅ **Private network** - Backend connects via `.internal` hostname (no public internet)
+- ✅ **Private network** - API connects via `.internal` hostname (no public internet)
 - ✅ **Ultra-low latency** - Same region, same datacenter
 - ✅ **Simple management** - One platform, one CLI (`flyctl`)
 - ✅ **EU region** - Frankfurt, data stays in EU (GDPR)
@@ -271,7 +271,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL
 DATABASE_URL=postgres://user:pass@appname-db.internal:5432/dbname
 ```
 
-**Backend uses directly:**
+**API uses directly:**
 ```python
 # config.py
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -343,7 +343,7 @@ alembic upgrade head
 **Example workflow:**
 ```yaml
 # .github/workflows/deploy-backend.yml
-name: Deploy Backend
+name: Deploy API
 
 on:
   push:
@@ -468,7 +468,7 @@ jobs:
 - Simple connection strings
 
 **Cons:**
-- ❌ **Separate platform** - Backend on Fly.io, DB on Railway
+- ❌ **Separate platform** - API on Fly.io, DB on Railway
 - ❌ **Public internet connection** - Slight latency overhead vs Fly.io internal network
 - ❌ **One more service** - More accounts, more management
 
@@ -535,7 +535,7 @@ jobs:
 ✅ **Preview deployments** - Test PRs before merge
 ✅ **AI-friendly** - Standard Docker + simple YAML workflows
 ✅ **Free tier sufficient** - MVP runs on free plans
-✅ **Co-located database** - Backend + DB on Fly.io, ultra-low latency
+✅ **Co-located database** - API + DB on Fly.io, ultra-low latency
 ✅ **Always-on database** - No shutdown/pause on inactivity
 ✅ **Single platform** - Fly.io for backend + database (simpler)
 ✅ **Type-safe deploys** - CI runs Mypy + TSC before deploy
@@ -560,13 +560,13 @@ jobs:
 
 **Three environments:**
 
-| Environment | Backend | Frontend | Database | Purpose |
+| Environment | API | Web | Database | Purpose |
 |-------------|---------|----------|----------|---------|
 | **Development** | Local (`uvicorn`) | Local (`next dev`) | Local Postgres or Fly.io dev | AI development |
 | **Staging** | Fly.io (`betzenstein-api-staging`) | Vercel preview | Fly.io Postgres staging | PR previews |
 | **Production** | Fly.io (`betzenstein-api`) | Vercel prod | Fly.io Postgres prod | Live users |
 
-### Backend Deployment (Fly.io)
+### API Deployment (Fly.io)
 
 #### 1. Install Fly CLI
 ```bash
@@ -636,7 +636,7 @@ primary_region = "fra"
   destination = "/data"
 ```
 
-### Frontend Deployment (Vercel)
+### Web Deployment (Vercel)
 
 #### 1. Install Vercel CLI
 ```bash
@@ -714,20 +714,20 @@ alembic upgrade head
 
 ### CI/CD Workflow
 
-#### Backend Workflow
+#### API Workflow
 ```yaml
 # .github/workflows/deploy-backend.yml
-name: Deploy Backend
+name: Deploy API
 
 on:
   push:
     branches: [main]
     paths:
-      - 'backend/**'
+      - 'api/**'
       - '.github/workflows/deploy-backend.yml'
   pull_request:
     paths:
-      - 'backend/**'
+      - 'api/**'
 
 jobs:
   test:
@@ -788,20 +788,20 @@ jobs:
           curl --fail https://betzenstein-api.fly.dev/health
 ```
 
-#### Frontend Workflow
+#### Web Workflow
 ```yaml
 # .github/workflows/deploy-frontend.yml
-name: Deploy Frontend
+name: Deploy Web
 
 on:
   push:
     branches: [main]
     paths:
-      - 'frontend/**'
+      - 'web/**'
       - '.github/workflows/deploy-frontend.yml'
   pull_request:
     paths:
-      - 'frontend/**'
+      - 'web/**'
 
 jobs:
   test:
@@ -850,13 +850,13 @@ jobs:
 
 **GitHub Secrets (Settings → Secrets and variables → Actions):**
 
-**Backend:**
+**API:**
 - `FLY_API_TOKEN` - Fly.io API token
 - `DATABASE_URL` - Railway PostgreSQL connection string
 - `RESEND_API_KEY` - Resend email API key
 - `SECRET_KEY` - FastAPI secret key (for JWT signing)
 
-**Frontend:**
+**Web:**
 - `VERCEL_TOKEN` - Vercel API token
 - `VERCEL_ORG_ID` - Vercel organization ID
 - `VERCEL_PROJECT_ID` - Vercel project ID
@@ -876,14 +876,14 @@ vercel project ls  # Get project ID
 
 ### Zero-Downtime Deployment Strategy
 
-**Backend (Fly.io):**
+**API (Fly.io):**
 1. Build new Docker image
 2. Start new machine(s)
 3. Run health checks (`/health` endpoint)
 4. If healthy, route traffic to new machines
 5. Stop old machines
 
-**Frontend (Vercel):**
+**Web (Vercel):**
 1. Build new Next.js app
 2. Deploy to new edge nodes
 3. Atomically switch DNS/routing
@@ -917,7 +917,7 @@ def upgrade():
 
 ### Deployment Checklist
 
-**Backend deployment:**
+**API deployment:**
 - [ ] Health check endpoint returns 200
 - [ ] Database migrations applied
 - [ ] Environment variables set
@@ -934,7 +934,7 @@ curl https://betzenstein-api.fly.dev/docs
 # Expected: OpenAPI UI
 ```
 
-**Frontend deployment:**
+**Web deployment:**
 - [ ] Preview deployment works
 - [ ] Production deployment accessible
 - [ ] API calls succeed (check Network tab)
@@ -976,8 +976,8 @@ psql $DATABASE_URL -c "SELECT COUNT(*) FROM bookings;"
 
 ## Related ADRs
 
-- [ADR-001: Backend Framework](adr-001-backend-framework.md) - FastAPI deployment considerations
-- [ADR-002: Frontend Framework](adr-002-frontend-framework.md) - Next.js deployment on Vercel
+- [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI deployment considerations
+- [ADR-002: Web Framework](adr-002-frontend-framework.md) - Next.js deployment on Vercel
 - [ADR-003: Database & ORM](adr-003-database-orm.md) - Railway PostgreSQL + Alembic migrations
 - [ADR-008: Testing Strategy](adr-008-testing-strategy.md) - CI/CD test execution
 

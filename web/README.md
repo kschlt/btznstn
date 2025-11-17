@@ -1,6 +1,6 @@
-# Betzenstein Booking - Frontend
+# Betzenstein Booking - Web
 
-Next.js frontend for the Betzenstein booking and approval system.
+Next.js web application for the Betzenstein booking and approval system.
 
 ## Quick Start
 
@@ -54,7 +54,7 @@ npx playwright test
 ## Project Structure
 
 ```
-frontend/
+web/
 ├── app/
 │   ├── layout.tsx        # Root layout
 │   ├── page.tsx          # Home page
@@ -123,7 +123,7 @@ npx playwright test --project="iPhone 8"
 See [Vercel Deployment](../docs/deployment/vercel-setup.md) (to be created in Phase 8)
 
 **Environment Variables:**
-- `NEXT_PUBLIC_API_URL` - Backend API URL (e.g., `https://api.betzenstein.app`)
+- `NEXT_PUBLIC_API_URL` - API URL (e.g., `https://api.betzenstein.app`)
 
 ## Documentation
 

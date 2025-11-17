@@ -21,13 +21,13 @@ We need a comprehensive testing strategy for the booking application that:
 
 ### Requirements
 
-**Backend testing:**
+**API testing:**
 - Unit tests (business logic, repositories, services)
 - Integration tests (database, API endpoints)
 - Contract tests (Pydantic validation)
 - Migration tests (Alembic reversibility)
 
-**Frontend testing:**
+**Web testing:**
 - Component tests (UI components)
 - Integration tests (forms, user flows)
 - E2E tests (critical journeys)
@@ -44,7 +44,7 @@ We need a comprehensive testing strategy for the booking application that:
 
 We will use:
 
-### Backend (Python/FastAPI)
+### API (Python/FastAPI)
 - **Pytest** for unit and integration tests
 - **Pytest-asyncio** for async test support
 - **SQLAlchemy test fixtures** for database tests
@@ -52,7 +52,7 @@ We will use:
 - **Coverage.py** for code coverage
 - **Faker** for test data generation
 
-### Frontend (TypeScript/Next.js)
+### Web (TypeScript/Next.js)
 - **Playwright** for E2E and integration tests
 - **React Testing Library** for component tests (optional, if needed)
 - **Axe-core** for accessibility tests
@@ -302,7 +302,7 @@ TOTAL                      312     28    91%
 
 ### 5. Test Organization
 
-#### Backend Structure
+#### API Structure
 
 ```
 tests/
@@ -322,7 +322,7 @@ tests/
 └── conftest.py  # Shared fixtures
 ```
 
-#### Frontend Structure
+#### Web Structure
 
 ```
 e2e/
@@ -438,7 +438,7 @@ def booking_data():
 
 ## Implementation Notes
 
-### Backend Test Setup
+### API Test Setup
 
 #### 1. Install Dependencies
 ```bash
@@ -527,7 +527,7 @@ async def test_post_booking_api(client: AsyncClient):
     assert data["total_days"] == 5
 ```
 
-### Frontend Test Setup
+### Web Test Setup
 
 #### 1. Install Dependencies
 ```bash
@@ -703,7 +703,7 @@ jobs:
 
 ### Running Tests Locally
 
-**Backend:**
+**API:**
 ```bash
 # All tests
 pytest
@@ -721,7 +721,7 @@ pytest --cov=app --cov-report=html
 pytest tests/unit/test_booking_service.py::test_create_booking_success
 ```
 
-**Frontend:**
+**Web:**
 ```bash
 # All E2E tests
 npx playwright test
@@ -780,8 +780,8 @@ npx playwright test
 
 ## Related ADRs
 
-- [ADR-001: Backend Framework](adr-001-backend-framework.md) - FastAPI testing patterns
-- [ADR-002: Frontend Framework](adr-002-frontend-framework.md) - Next.js testing
+- [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI testing patterns
+- [ADR-002: Web Framework](adr-002-frontend-framework.md) - Next.js testing
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md) - Mypy + TSC in CI
 - [ADR-007: Deployment Strategy](adr-007-deployment.md) - CI/CD integration
 

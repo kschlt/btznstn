@@ -206,9 +206,9 @@ class BookingRepository:
 
 **Why Fly.io Postgres:**
 
-#### a) Co-Located with Backend
+#### a) Co-Located with API
 
-- ✅ **Same platform** - Backend and database on Fly.io
+- ✅ **Same platform** - API and database on Fly.io
 - ✅ **Low latency** - Private network connection (no internet hop)
 - ✅ **Simple management** - One platform, one CLI, one dashboard
 - ✅ **Frankfurt region** - Same region as backend (even lower latency)
@@ -232,7 +232,7 @@ DATABASE_URL=postgres://user:pass@appname-db.internal:5432/dbname
 ```
 
 **Internal networking:**
-- Backend connects via `.internal` hostname (private network)
+- API connects via `.internal` hostname (private network)
 - No public internet, lower latency
 - AI can use standard `DATABASE_URL` environment variable
 
@@ -285,7 +285,7 @@ DATABASE_URL=postgres://user:pass@appname-db.internal:5432/dbname
 - Simple connection strings
 
 **Cons:**
-- ⚠️ **Separate platform** - Backend on Fly.io, DB on Railway
+- ⚠️ **Separate platform** - API on Fly.io, DB on Railway
 - ⚠️ **Public internet connection** - Slight latency overhead
 - ⚠️ **One more service** - More accounts, more management
 
@@ -563,7 +563,7 @@ mypy app/models/
 
 ## Related ADRs
 
-- [ADR-001: Backend Framework](adr-001-backend-framework.md) - FastAPI integration
+- [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI integration
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md) - Mypy validation
 - [ADR-007: Deployment Strategy](adr-007-deployment.md) - Fly.io deployment
 

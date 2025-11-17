@@ -12,23 +12,23 @@ This document provides a complete reference of all technologies, frameworks, lib
 
 | Layer | Technology | Version | Purpose |
 |-------|-----------|---------|---------|
-| **Backend Framework** | FastAPI | Latest | REST API, async Python |
-| **Backend Language** | Python | 3.11+ | Application logic |
-| **Frontend Framework** | Next.js (App Router) | 14+ | React framework, SSR/SSG |
-| **Frontend Language** | TypeScript | 5+ | Type-safe JavaScript |
+| **API Framework** | FastAPI | Latest | REST API, async Python |
+| **API Language** | Python | 3.11+ | Application logic |
+| **Web Framework** | Next.js (App Router) | 14+ | React framework, SSR/SSG |
+| **Web Language** | TypeScript | 5+ | Type-safe JavaScript |
 | **Database** | PostgreSQL | 15+ | Relational database |
 | **ORM** | SQLAlchemy | 2.0+ | Python ORM, migrations |
 | **UI Library** | Shadcn/ui | Latest | Copy-paste React components |
 | **CSS Framework** | Tailwind CSS | 3+ | Utility-first CSS |
 | **Email Service** | Resend | - | Transactional email API |
-| **Backend Hosting** | Fly.io | - | Container hosting (Frankfurt) |
+| **API Hosting** | Fly.io | - | Container hosting (Frankfurt) |
 | **Database Hosting** | Fly.io Postgres | - | Managed PostgreSQL (Frankfurt) |
-| **Frontend Hosting** | Vercel | - | Next.js hosting + CDN |
+| **Web Hosting** | Vercel | - | Next.js hosting + CDN |
 | **CI/CD** | GitHub Actions | - | Automated testing + deployment |
 
 ---
 
-## Backend Stack
+## API Stack
 
 ### Core Framework
 
@@ -41,7 +41,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - Async/await native
   - High performance
 - **Documentation:** https://fastapi.tiangolo.com/
-- **ADR:** [ADR-001: Backend Framework](adr-001-backend-framework.md)
+- **ADR:** [ADR-001: API Framework](adr-001-backend-framework.md)
 
 ### Language
 
@@ -162,7 +162,7 @@ This document provides a complete reference of all technologies, frameworks, lib
 
 ---
 
-## Frontend Stack
+## Web Stack
 
 ### Core Framework
 
@@ -176,7 +176,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - API Routes (minimal, if needed)
   - Image optimization
 - **Documentation:** https://nextjs.org/docs
-- **ADR:** [ADR-002: Frontend Framework](adr-002-frontend-framework.md)
+- **ADR:** [ADR-002: Web Framework](adr-002-frontend-framework.md)
 
 **React**
 - **Version:** 18+ (bundled with Next.js)
@@ -309,7 +309,7 @@ This document provides a complete reference of all technologies, frameworks, lib
 
 ## Hosting & Deployment
 
-### Backend Hosting
+### API Hosting
 
 **Fly.io**
 - **Region:** Frankfurt (FRA)
@@ -340,7 +340,7 @@ This document provides a complete reference of all technologies, frameworks, lib
 - **Documentation:** https://fly.io/docs/postgres/
 - **ADR:** [ADR-003: Database & ORM](adr-003-database-orm.md)
 
-### Frontend Hosting
+### Web Hosting
 
 **Vercel**
 - **Purpose:** Next.js hosting + global CDN
@@ -415,7 +415,7 @@ This document provides a complete reference of all technologies, frameworks, lib
 
 ## Environment Variables
 
-### Backend (FastAPI)
+### API (FastAPI)
 
 | Variable | Purpose | Example |
 |----------|---------|---------|
@@ -426,11 +426,11 @@ This document provides a complete reference of all technologies, frameworks, lib
 | `PYTHON_ENV` | Environment | `development` / `production` |
 | `LOG_LEVEL` | Logging level | `INFO` / `DEBUG` |
 
-### Frontend (Next.js)
+### Web (Next.js)
 
 | Variable | Purpose | Example |
 |----------|---------|---------|
-| `NEXT_PUBLIC_API_URL` | Backend API URL | `https://api.betzenstein.app` |
+| `NEXT_PUBLIC_API_URL` | API API URL | `https://api.betzenstein.app` |
 
 **Note:** `NEXT_PUBLIC_*` variables are exposed to browser.
 
@@ -438,7 +438,7 @@ This document provides a complete reference of all technologies, frameworks, lib
 
 ## Package Management
 
-### Backend (Python)
+### API (Python)
 
 **pip + requirements.txt**
 - `requirements.txt` - Production dependencies
@@ -450,7 +450,7 @@ pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-### Frontend (Node.js)
+### Web (Node.js)
 
 **npm + package.json**
 - `dependencies` - Production packages
@@ -466,11 +466,11 @@ npm install  # Local development
 
 ## Versioning Strategy
 
-**Backend:**
+**API:**
 - API versioned via URL: `/api/v1/...`
 - Breaking changes = new version (`/api/v2/...`)
 
-**Frontend:**
+**Web:**
 - Versioned with backend API
 - Semantic versioning (later)
 
@@ -483,8 +483,8 @@ npm install  # Local development
 ## Monitoring & Observability (Future)
 
 **Logging:**
-- Backend: Python `logging` module (structured JSON logs)
-- Frontend: Vercel Analytics
+- API: Python `logging` module (structured JSON logs)
+- Web: Vercel Analytics
 
 **Monitoring:**
 - Fly.io metrics (CPU, memory, requests)
@@ -613,8 +613,8 @@ npm install  # Local development
 ## Related Documentation
 
 - [Architecture Overview](README.md)
-- [ADR-001: Backend Framework](adr-001-backend-framework.md)
-- [ADR-002: Frontend Framework](adr-002-frontend-framework.md)
+- [ADR-001: API Framework](adr-001-backend-framework.md)
+- [ADR-002: Web Framework](adr-002-frontend-framework.md)
 - [ADR-003: Database & ORM](adr-003-database-orm.md)
 - [ADR-004: Email Service](adr-004-email-service.md)
 - [ADR-005: UI Framework](adr-005-ui-framework.md)

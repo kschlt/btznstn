@@ -1,4 +1,4 @@
-# ADR-002: Frontend Framework - Next.js App Router
+# ADR-002: Web Framework - Next.js App Router
 
 **Status:** Accepted
 **Date:** 2025-01-17
@@ -237,7 +237,7 @@ AI knows Tailwind responsive patterns well.
 ### Project Structure
 
 ```
-/frontend/
+/web/
 ├── app/
 │   ├── layout.tsx           # Root layout (German, metadata)
 │   ├── page.tsx             # Landing page (redirect to calendar)
@@ -413,7 +413,7 @@ npm run dev
 
 ## Related ADRs
 
-- [ADR-001: Backend Framework](adr-001-backend-framework.md) - FastAPI integration
+- [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI integration
 - [ADR-005: UI Framework](adr-005-ui-framework.md) - Shadcn/ui + Tailwind
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md) - TypeScript + Zod
 - [ADR-007: Deployment Strategy](adr-007-deployment.md) - Vercel deployment

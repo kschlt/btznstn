@@ -65,7 +65,7 @@ flyctl auth whoami
 
 ---
 
-### 4. Create Fly.io App (Backend)
+### 4. Create Fly.io App (API)
 
 ```bash
 cd backend
@@ -134,7 +134,7 @@ flyctl secrets list --app betzenstein-api
 
 ### 7. Configure fly.toml
 
-Update `backend/fly.toml` with proper configuration:
+Update `api/fly.toml` with proper configuration:
 
 ```toml
 app = "betzenstein-api"
@@ -175,7 +175,7 @@ primary_region = "fra"
 
 ### 8. Create Dockerfile
 
-Create `backend/Dockerfile`:
+Create `api/Dockerfile`:
 
 ```dockerfile
 FROM python:3.11-slim
@@ -198,7 +198,7 @@ CMD alembic upgrade head && \
 
 ---
 
-### 9. Deploy Backend
+### 9. Deploy API
 
 ```bash
 flyctl deploy --app betzenstein-api
@@ -237,13 +237,13 @@ python -c "import asyncio; from app.core.database import engine; print('DB conne
 
 ---
 
-## Frontend Deployment (Vercel)
+## Web Deployment (Vercel)
 
-**Frontend is deployed separately on Vercel:**
+**Web is deployed separately on Vercel:**
 
 1. Go to [https://vercel.com/new](https://vercel.com/new)
 2. Import GitHub repository
-3. Select `frontend/` as root directory
+3. Select `web/` as root directory
 4. Set environment variable:
    - `NEXT_PUBLIC_API_URL` = `https://betzenstein-api.fly.dev`
 5. Deploy
@@ -380,7 +380,7 @@ Before deploying to production:
 - [ ] fly.toml configured
 - [ ] Database migrations tested
 - [ ] Health check endpoint working
-- [ ] Frontend deployed on Vercel
+- [ ] Web deployed on Vercel
 - [ ] DNS configured (if using custom domain)
 - [ ] SSL certificate verified (automatic with Fly.io)
 

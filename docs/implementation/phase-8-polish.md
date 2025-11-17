@@ -49,13 +49,13 @@ Feature: Accessibility
 ```gherkin
 Feature: Production Deployment
 
-  Scenario: Backend deployed to Fly.io
+  Scenario: API deployed to Fly.io
     Given I push to main branch
     When GitHub Actions runs
     Then backend should deploy to Fly.io Frankfurt
     And health check should pass
 
-  Scenario: Frontend deployed to Vercel
+  Scenario: Web deployed to Vercel
     Given I push to main branch
     Then frontend should deploy to Vercel
     And preview URL should be accessible

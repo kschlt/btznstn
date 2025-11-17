@@ -1,4 +1,4 @@
-# Phase 5: Frontend Calendar
+# Phase 5: Web Calendar
 
 ## Goal
 Build calendar UI with booking display and navigation.
@@ -81,4 +81,4 @@ Feature: View Booking Details
 - [ ] Playwright tests pass
 - [ ] Accessibility: no axe violations
 
-**Next:** [Phase 6: Frontend Booking](phase-6-frontend-booking.md)
+**Next:** [Phase 6: Web Booking](phase-6-frontend-booking.md)

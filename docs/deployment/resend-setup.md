@@ -76,7 +76,7 @@ Before implementing Phase 4, ensure:
 
 **Mock Service (Phase 0-3):**
 - Currently using a file-based mock email service
-- Emails logged to `backend/logs/emails/` (console in development)
+- Emails logged to `api/logs/emails/` (console in development)
 - No actual emails sent
 
 **Real Service (Phase 4+):**
