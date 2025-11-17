@@ -1,5 +1,6 @@
 """Approver party model."""
 
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -20,7 +21,7 @@ class ApproverParty(Base):
     party: Mapped[AffiliationEnum] = mapped_column(primary_key=True)
 
     # Email address (unique, can be updated)
-    email: Mapped[str] = mapped_column(unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False)
 
     # Notification enabled flag
     notification_enabled: Mapped[bool] = mapped_column(

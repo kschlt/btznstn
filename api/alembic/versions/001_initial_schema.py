@@ -108,7 +108,8 @@ def upgrade() -> None:
     op.create_index(
         "idx_bookings_last_activity",
         "bookings",
-        [sa.text("last_activity_at DESC")],
+        ["last_activity_at"],
+        postgresql_ops={"last_activity_at": "DESC"},
     )
     # GiST index for date range overlap detection (BR-002, BR-029)
     op.execute(
@@ -176,7 +177,8 @@ def upgrade() -> None:
     op.create_index(
         "idx_timeline_when",
         "timeline_events",
-        [sa.text('"when" DESC')],
+        ["when"],
+        postgresql_ops={"when": "DESC"},
     )
 
 
