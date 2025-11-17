@@ -1,10 +1,10 @@
 """Booking repository for data access."""
 
+from collections.abc import Sequence
 from datetime import date
-from typing import Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, extract, func, or_, select
+from sqlalchemy import and_, extract, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import CheckConstraint, Index, func
-from sqlalchemy.dialects.postgresql import DATERANGE
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -77,7 +76,11 @@ class Booking(Base):
         # Indexes
         Index("idx_bookings_status", "status"),
         Index("idx_bookings_requester_email", "requester_email"),
-        Index("idx_bookings_last_activity", "last_activity_at", postgresql_ops={"last_activity_at": "DESC"}),
+        Index(
+            "idx_bookings_last_activity",
+            "last_activity_at",
+            postgresql_ops={"last_activity_at": "DESC"},
+        ),
         # GiST index for date range overlap detection (BR-002, BR-029)
         Index(
             "idx_bookings_date_range",
