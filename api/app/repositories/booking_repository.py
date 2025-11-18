@@ -1,10 +1,11 @@
 """Booking repository for data access."""
 
+from calendar import monthrange
 from collections.abc import Sequence
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import and_, extract, select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -99,9 +100,13 @@ class BookingRepository:
         self, month: int, year: int
     ) -> Sequence[Booking]:
         """
-        List bookings for calendar view.
+        List bookings that overlap with the specified month.
+
+        A booking overlaps with the month if:
+        - booking.start_date <= month_end AND booking.end_date >= month_start
 
         Only returns Pending and Confirmed bookings (BR-004: Denied not public).
+        Eager loads approvals to avoid N+1 queries.
         Orders by start_date.
 
         Args:
@@ -109,17 +114,23 @@ class BookingRepository:
             year: Year
 
         Returns:
-            List of bookings for the calendar
+            List of bookings that overlap with the calendar month
         """
+        # Get first and last day of month
+        month_start = date(year, month, 1)
+        _, last_day = monthrange(year, month)
+        month_end = date(year, month, last_day)
+
         result = await self.session.execute(
             select(Booking)
             .where(
                 and_(
                     Booking.status.in_([StatusEnum.PENDING, StatusEnum.CONFIRMED]),
-                    extract("month", Booking.start_date) == month,
-                    extract("year", Booking.start_date) == year,
+                    Booking.start_date <= month_end,  # Starts on or before month end
+                    Booking.end_date >= month_start,  # Ends on or after month start
                 )
             )
+            .options(selectinload(Booking.approvals))  # Avoid N+1 queries
             .order_by(Booking.start_date)
         )
         return result.scalars().all()
@@ -167,17 +178,19 @@ class BookingRepository:
         """
         List bookings by requester email.
 
+        Per BR-023: Sorted by LastActivityAt desc (most recent activity first).
+
         Args:
             email: Requester email address
             limit: Maximum number of bookings to return
 
         Returns:
-            List of bookings for the requester
+            List of bookings for the requester, sorted by last activity
         """
         result = await self.session.execute(
             select(Booking)
             .where(Booking.requester_email == email)
-            .order_by(Booking.created_at.desc())
+            .order_by(Booking.last_activity_at.desc())
             .limit(limit)
         )
         return result.scalars().all()

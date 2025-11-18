@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, Index, func
+from sqlalchemy import CheckConstraint, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -37,11 +37,11 @@ class Booking(Base):
     affiliation: Mapped[AffiliationEnum] = mapped_column(nullable=False)
 
     # Requester details (email is not unique - same person can have multiple bookings)
-    requester_first_name: Mapped[str] = mapped_column(nullable=False)
-    requester_email: Mapped[str] = mapped_column(nullable=False)
+    requester_first_name: Mapped[str] = mapped_column(String(40), nullable=False)
+    requester_email: Mapped[str] = mapped_column(String(254), nullable=False)
 
     # Optional description
-    description: Mapped[str | None] = mapped_column(nullable=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Status
     status: Mapped[StatusEnum] = mapped_column(

@@ -200,6 +200,56 @@ Dieser Eintrag liegt in der Vergangenheit und kann nicht mehr geändert werden.
 
 ---
 
+## API & Access Errors
+
+### Not Found (404)
+
+**Scenario:** Booking ID does not exist, or Denied/Canceled booking accessed without token
+
+**German Copy:**
+```
+Der Eintrag konnte leider nicht gefunden werden.
+```
+
+**Display:**
+- Error page or modal
+- Return to calendar button
+- HTTP 404 status code
+
+---
+
+### Invalid Token (401)
+
+**Scenario:** Token signature is invalid or token structure is malformed
+
+**German Copy:**
+```
+Ungültiger Zugangslink.
+```
+
+**Display:**
+- Error page with explanation
+- Request new link option
+- HTTP 401 status code
+
+---
+
+### Forbidden Access (403)
+
+**Scenario:** Valid token but wrong role/booking (e.g., requester A trying to access requester B's booking)
+
+**German Copy:**
+```
+Du hast keinen Zugriff auf diesen Eintrag.
+```
+
+**Display:**
+- Error page
+- Return to calendar button
+- HTTP 403 status code
+
+---
+
 ## Success Messages
 
 ### Booking Submitted

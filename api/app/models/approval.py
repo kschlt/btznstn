@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, Index, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -40,7 +40,7 @@ class Approval(Base):
     )
 
     # Comment (required if decision = Denied)
-    comment: Mapped[str | None] = mapped_column(nullable=True)
+    comment: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Timestamp when decision was made
     decided_at: Mapped[datetime | None] = mapped_column(nullable=True)

@@ -3,6 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routers import bookings
+
 app = FastAPI(
     title="Betzenstein Booking API",
     description="Booking & Approval system for Betzenstein",
@@ -19,6 +21,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register routers
+app.include_router(bookings.router)
 
 
 @app.get("/")

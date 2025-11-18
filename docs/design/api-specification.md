@@ -193,11 +193,31 @@ Require `?token=xxx` query parameter.
 **Purpose:** Get booking details (permissions vary by role).
 
 **Authorization:**
-- **Viewer (no token):** Public fields only (first name, dates, status if Pending/Confirmed)
-- **Requester (token):** All fields + timeline + comments + actions
-- **Approver (token):** All fields + timeline + comments + actions
+- **Public (no token):** Limited fields only (Pending/Confirmed bookings)
+- **Requester (token):** All fields + timeline + approvals
+- **Approver (token):** All fields + timeline + approvals
 
-**Response (Requester/Approver):**
+**Response (Public - No Token):**
+```json
+{
+  "id": "uuid",
+  "requester_first_name": "Anna",
+  "start_date": "2025-08-01",
+  "end_date": "2025-08-05",
+  "total_days": 5,
+  "party_size": 4,
+  "affiliation": "Ingeborg",
+  "status": "Pending" | "Confirmed",
+  "is_past": false
+}
+```
+
+**Notes (Public):**
+- Excludes: `requester_email`, `description`, `approvals`, `timeline`, `created_at`, `updated_at`, `last_activity_at`
+- Denied/Canceled bookings return 404 per BR-004
+- `is_past` calculated as `end_date < today` (Europe/Berlin timezone) per BR-014
+
+**Response (Authenticated - With Token):**
 ```json
 {
   "id": "uuid",
@@ -210,37 +230,47 @@ Require `?token=xxx` query parameter.
   "description": "Optional description",
   "status": "Pending",
   "created_at": "2025-01-17T12:00:00Z",
+  "updated_at": "2025-01-17T13:00:00Z",
   "last_activity_at": "2025-01-17T13:00:00Z",
+  "is_past": false,
   "approvals": [
     {
+      "id": "uuid",
       "party": "Ingeborg",
       "decision": "NoResponse" | "Approved" | "Denied",
       "comment": "Optional comment (only if Denied)",
       "decided_at": "2025-01-17T14:00:00Z"
     }
   ],
-  "timeline": [
+  "timeline_events": [
     {
+      "id": "uuid",
       "when": "2025-01-17T12:00:00Z",
-      "actor": "Requester",
-      "event_type": "Submitted",
+      "actor": "Anna",
+      "event_type": "Created",
       "note": null
     },
     {
+      "id": "uuid",
       "when": "2025-01-17T14:00:00Z",
       "actor": "Ingeborg",
-      "event_type": "Approved",
-      "note": null
+      "event_type": "SelfApproved",
+      "note": "Ingeborg (self-approval)"
     }
-  ],
-  "available_actions": ["edit", "cancel"]  // Depends on role + status
+  ]
 }
 ```
 
+**Notes (Authenticated):**
+- Includes all fields + `approvals` + `timeline_events`
+- Denied/Canceled bookings accessible with valid token
+- `available_actions` field deferred to Phase 3 (frontend can derive from status + role)
+
 **Status Codes:**
 - `200` - Success
-- `403` - Unauthorized (invalid token or wrong role)
-- `404` - Booking not found
+- `401` - Invalid token signature (German: "Ungültiger Zugangslink.")
+- `403` - Valid token but wrong booking/role (German: "Du hast keinen Zugriff auf diesen Eintrag.")
+- `404` - Booking not found, or Denied/Canceled without token (German: "Der Eintrag konnte leider nicht gefunden werden.")
 
 ---
 

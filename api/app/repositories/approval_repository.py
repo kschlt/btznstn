@@ -3,11 +3,13 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.approval import Approval
-from app.models.enums import AffiliationEnum, DecisionEnum
+from app.models.booking import Booking
+from app.models.enums import AffiliationEnum, DecisionEnum, StatusEnum
 
 
 class ApprovalRepository:
@@ -105,24 +107,63 @@ class ApprovalRepository:
 
     async def list_pending_for_party(
         self, party: AffiliationEnum, limit: int = 50
-    ) -> Sequence[Approval]:
+    ) -> Sequence[Booking]:
         """
-        List pending approvals for a specific party.
+        List pending bookings where this party has NoResponse decision.
+
+        Per BR-023: Outstanding items are:
+        - Items where this approver = NoResponse
+        - Status = Pending
+        - Sorted by LastActivityAt desc (most recent activity first)
 
         Args:
             party: Approver party
             limit: Maximum number to return
 
         Returns:
-            List of approvals awaiting decision
+            List of bookings awaiting this party's decision
         """
         result = await self.session.execute(
-            select(Approval)
+            select(Booking)
+            .join(Approval)
             .where(
-                Approval.party == party,
-                Approval.decision == DecisionEnum.NO_RESPONSE,
+                and_(
+                    Approval.party == party,
+                    Approval.decision == DecisionEnum.NO_RESPONSE,
+                    Booking.status == StatusEnum.PENDING,
+                )
             )
-            .order_by(Approval.id.desc())
+            .options(selectinload(Booking.approvals))  # Eager load approvals
+            .order_by(Booking.last_activity_at.desc())
+            .limit(limit)
+        )
+        return result.scalars().all()
+
+    async def list_history_for_party(
+        self, party: AffiliationEnum, limit: int = 100
+    ) -> Sequence[Booking]:
+        """
+        List all bookings involving this party (history view).
+
+        Per BR-023: History includes:
+        - All items involving this approver
+        - All statuses (Pending, Confirmed, Denied, Canceled)
+        - Sorted by LastActivityAt desc
+        - Read-only view
+
+        Args:
+            party: Approver party
+            limit: Maximum number to return
+
+        Returns:
+            List of all bookings this party has been involved with
+        """
+        result = await self.session.execute(
+            select(Booking)
+            .join(Approval)
+            .where(Approval.party == party)
+            .options(selectinload(Booking.approvals))  # Eager load approvals
+            .order_by(Booking.last_activity_at.desc())
             .limit(limit)
         )
         return result.scalars().all()

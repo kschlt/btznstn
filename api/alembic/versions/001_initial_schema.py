@@ -20,21 +20,45 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Create initial database schema."""
-    # Create enums
+    # Create enums using raw SQL with IF NOT EXISTS (separate statements for asyncpg)
+    op.execute(
+        """
+        DO $$ BEGIN
+            CREATE TYPE affiliation_enum AS ENUM ('Ingeborg', 'Cornelia', 'Angelika');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$
+        """
+    )
+    op.execute(
+        """
+        DO $$ BEGIN
+            CREATE TYPE status_enum AS ENUM ('Pending', 'Denied', 'Confirmed', 'Canceled');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$
+        """
+    )
+    op.execute(
+        """
+        DO $$ BEGIN
+            CREATE TYPE decision_enum AS ENUM ('NoResponse', 'Approved', 'Denied');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$
+        """
+    )
+
+    # Create Python enum references (without creating the type in DB)
     affiliation_enum = postgresql.ENUM(
-        "Ingeborg", "Cornelia", "Angelika", name="affiliation_enum"
+        "Ingeborg", "Cornelia", "Angelika", name="affiliation_enum", create_type=False
     )
-    affiliation_enum.create(op.get_bind())
-
     status_enum = postgresql.ENUM(
-        "Pending", "Denied", "Confirmed", "Canceled", name="status_enum"
+        "Pending", "Denied", "Confirmed", "Canceled", name="status_enum", create_type=False
     )
-    status_enum.create(op.get_bind())
-
     decision_enum = postgresql.ENUM(
-        "NoResponse", "Approved", "Denied", name="decision_enum"
+        "NoResponse", "Approved", "Denied", name="decision_enum", create_type=False
     )
-    decision_enum.create(op.get_bind())
 
     # Create approver_parties table
     op.create_table(
@@ -84,7 +108,8 @@ def upgrade() -> None:
     op.create_index(
         "idx_bookings_last_activity",
         "bookings",
-        [sa.text("last_activity_at DESC")],
+        ["last_activity_at"],
+        postgresql_ops={"last_activity_at": "DESC"},
     )
     # GiST index for date range overlap detection (BR-002, BR-029)
     op.execute(
@@ -94,7 +119,7 @@ def upgrade() -> None:
         """
     )
 
-    # Create trigger to update updated_at
+    # Create trigger to update updated_at (separate statements for asyncpg)
     op.execute(
         """
         CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -103,12 +128,15 @@ def upgrade() -> None:
             NEW.updated_at = NOW();
             RETURN NEW;
         END;
-        $$ LANGUAGE plpgsql;
-
+        $$ LANGUAGE plpgsql
+        """
+    )
+    op.execute(
+        """
         CREATE TRIGGER update_bookings_updated_at
         BEFORE UPDATE ON bookings
         FOR EACH ROW
-        EXECUTE FUNCTION update_updated_at_column();
+        EXECUTE FUNCTION update_updated_at_column()
         """
     )
 
@@ -149,7 +177,8 @@ def upgrade() -> None:
     op.create_index(
         "idx_timeline_when",
         "timeline_events",
-        [sa.text("when DESC")],
+        ["when"],
+        postgresql_ops={"when": "DESC"},
     )
 
 
