@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures for the Betzenstein Booking API."""
 
 import asyncio
+import os
 from typing import AsyncGenerator
 
 import pytest
@@ -13,8 +14,13 @@ from app.core.database import Base, get_db
 from app.main import app
 
 
-# Use test database (same credentials as dev database from Docker Compose)
-TEST_DATABASE_URL = "postgresql+asyncpg://betzenstein:dev_password@localhost:5432/btznstn_test"
+# Test database URL - supports both local dev and CI environments
+# CI uses DATABASE_URL env var (set in GitHub Actions)
+# Local dev uses default Docker Compose credentials
+TEST_DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+asyncpg://betzenstein:dev_password@localhost:5432/btznstn_test",
+)
 
 
 @pytest.fixture(scope="session")
