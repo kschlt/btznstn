@@ -57,7 +57,30 @@ async def create_booking(
 
     try:
         booking = await service.create_booking(booking_data)
-        return BookingResponse.model_validate(booking)
+
+        # Calculate is_past (BR-014)
+        berlin_tz = ZoneInfo("Europe/Berlin")
+        today = datetime.now(berlin_tz).date()
+        is_past = booking.end_date < today
+
+        # Return response with calculated is_past field
+        return BookingResponse(
+            id=booking.id,
+            requester_first_name=booking.requester_first_name,
+            start_date=booking.start_date,
+            end_date=booking.end_date,
+            party_size=booking.party_size,
+            affiliation=booking.affiliation,
+            description=booking.description,
+            status=booking.status,
+            total_days=booking.total_days,
+            created_at=booking.created_at,
+            updated_at=booking.updated_at,
+            last_activity_at=booking.last_activity_at,
+            is_past=is_past,
+            approvals=list(booking.approvals),
+            timeline_events=list(booking.timeline_events),
+        )
     except ValueError as e:
         # Business logic errors (conflicts, validation)
         raise HTTPException(
