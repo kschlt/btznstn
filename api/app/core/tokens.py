@@ -43,7 +43,7 @@ def generate_token(payload: dict[str, Any]) -> str:
 
     # Sign with HMAC-SHA256
     signature = hmac.new(
-        settings.SECRET_KEY.encode(),
+        settings.secret_key.encode(),
         message.encode(),
         hashlib.sha256,
     ).digest()
@@ -84,7 +84,7 @@ def verify_token(token: str) -> dict[str, Any] | None:
 
         # Verify signature using constant-time comparison
         expected_signature = hmac.new(
-            settings.SECRET_KEY.encode(),
+            settings.secret_key.encode(),
             message,
             hashlib.sha256,
         ).digest()
@@ -93,7 +93,7 @@ def verify_token(token: str) -> dict[str, Any] | None:
             return None  # Invalid signature
 
         # Parse payload
-        payload = json.loads(message.decode())
+        payload: dict[str, Any] = json.loads(message.decode())
         return payload
 
     except Exception:
