@@ -57,18 +57,21 @@ class BookingRepository:
 
     async def get_with_approvals(self, booking_id: UUID) -> Booking | None:
         """
-        Get booking with approvals eagerly loaded.
+        Get booking with approvals and timeline events eagerly loaded.
 
         Args:
             booking_id: Booking UUID
 
         Returns:
-            Booking with approvals loaded, None if not found
+            Booking with approvals and timeline events loaded, None if not found
         """
         result = await self.session.execute(
             select(Booking)
             .where(Booking.id == booking_id)
-            .options(selectinload(Booking.approvals))
+            .options(
+                selectinload(Booking.approvals),
+                selectinload(Booking.timeline_events),
+            )
         )
         return result.scalar_one_or_none()
 

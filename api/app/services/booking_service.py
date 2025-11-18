@@ -1,6 +1,7 @@
 """Booking business logic service."""
 
 from datetime import datetime
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -144,3 +145,15 @@ class BookingService:
             raise RuntimeError("Booking not found after creation")
 
         return reloaded_booking
+
+    async def get_booking(self, booking_id: UUID) -> Booking | None:
+        """
+        Get booking by ID with approvals and timeline events.
+
+        Args:
+            booking_id: UUID of the booking
+
+        Returns:
+            Booking with related data, or None if not found
+        """
+        return await self.booking_repo.get_with_approvals(booking_id)
