@@ -468,14 +468,26 @@ Feature: Get Booking
 
 - [ ] **FIRST:** Write ALL 20 tests (must fail initially)
 - [ ] **Verify:** All tests fail
-- [ ] Create `PublicBookingResponse` Pydantic schema (limited fields)
-- [ ] Create `FullBookingResponse` Pydantic schema (all fields)
-- [ ] Implement `GET /api/v1/bookings/{id}` endpoint
-- [ ] Check token presence/validity
-- [ ] If no token and status=Denied/Canceled, return 404 per BR-004
-- [ ] If token valid, return `FullBookingResponse`
-- [ ] If no token, return `PublicBookingResponse`
-- [ ] Calculate `is_past` using Europe/Berlin timezone per BR-014
+- [ ] Create token utilities (`app/core/tokens.py`):
+  - [ ] `generate_token(payload, secret)` - HMAC-SHA256 signing
+  - [ ] `verify_token(token, secret)` - Signature verification + payload extraction
+  - [ ] Note: Token generation in emails deferred to Phase 4; US-2.2 uses manual tokens for testing
+- [ ] Update `BookingResponse` schema to include:
+  - [ ] `is_past: bool` field (calculated per BR-014)
+  - [ ] `timeline_events: list[TimelineEventResponse]` field
+- [ ] Create `PublicBookingResponse` Pydantic schema:
+  - [ ] Limited fields: id, requester_first_name, start_date, end_date, total_days, party_size, affiliation, status
+  - [ ] Include `is_past: bool` for calendar display
+  - [ ] Exclude: requester_email, description, approvals, timeline_events, created_at, updated_at, last_activity_at
+- [ ] Create `TimelineEventResponse` Pydantic schema for timeline array
+- [ ] Implement `GET /api/v1/bookings/{id}` endpoint:
+  - [ ] Extract optional `?token=xxx` query parameter
+  - [ ] If token provided: verify signature, extract payload
+  - [ ] If no token and status=Denied/Canceled, return 404 per BR-004
+  - [ ] If token valid, return full `BookingResponse` with approvals + timeline
+  - [ ] If no token, return `PublicBookingResponse` (limited fields)
+  - [ ] Calculate `is_past` using Europe/Berlin timezone per BR-014
+  - [ ] Return German error messages (401/403/404) from `error-handling.md`
 - [ ] **Verify:** All tests pass
 - [ ] Run `mypy app/` and `ruff check app/`
 - [ ] **Self-review:** Step 5 checklist
