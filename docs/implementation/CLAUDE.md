@@ -36,13 +36,68 @@ We discovered 17 issues in Phase 1 implementation because tests were written AFT
 
 **Root cause:** Implementation came first, tests came second, bugs were invisible.
 
-**Solution:** STRICT TEST-FIRST DEVELOPMENT (below)
+**Solution:** STRICT TEST-FIRST DEVELOPMENT with FOUR-EYES TEST REVIEW (below)
 
 ---
 
-## Mandatory Implementation Workflow
+## Mandatory Implementation Workflow (7 Steps with Role Separation)
+
+**Different perspectives at each step ensure comprehensive quality:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Step 1: Pre-Implementation Check                            │
+│ 🎭 Role: Requirements Analyst                               │
+│ Output: Complete list of BRs, edge cases, German copy       │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Step 2: Write Test Specifications                           │
+│ 🎭 Role: Senior Test Engineer                               │
+│ Output: Comprehensive test suite (must fail initially)      │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Step 3: Review Tests for Completeness ⚠️ CRITICAL           │
+│ 🎭 Role: Senior Architect/Developer                         │
+│ Output: Verified test coverage (gaps identified & fixed)    │
+│ ↻ Loop back to Step 2 if gaps found                         │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Step 4: Implement Code                                      │
+│ 🎭 Role: Implementation Specialist                          │
+│ Output: Code that makes tests pass                          │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Step 5: Verify Tests Pass                                   │
+│ 🎭 Role: Quality Assurance                                  │
+│ Output: All tests green, type checks pass, linting clean    │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Step 6: Final Code Review                                   │
+│ 🎭 Role: Critical Senior Developer                          │
+│ Output: Code verified against all requirements              │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Step 7: Commit and Push                                     │
+│ Output: Clean commit with comprehensive message             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Innovation: Step 3 (Four-Eyes Test Review)**
+- Prevents fixing BOTH tests AND code later
+- Catches test gaps BEFORE implementation
+- Higher likelihood of correct implementation on first try
+
+---
 
 ### **Step 1: Pre-Implementation Check (REQUIRED)**
+
+**🎭 Role: Requirements Analyst** - Gather ALL requirements comprehensively
 
 **Before writing ANY code or tests, complete this checklist:**
 
@@ -74,6 +129,8 @@ If anything is unclear, **ASK THE USER** - do not assume or improvise.
 ---
 
 ### **Step 2: Write Test Specifications (BEFORE Code)**
+
+**🎭 Role: Senior Test Engineer** - Focus on comprehensive test coverage
 
 **For each user story, define COMPLETE test coverage:**
 
@@ -148,7 +205,83 @@ pytest tests/unit/test_booking_repository.py::test_calendar_shows_multi_month_bo
 
 ---
 
-### **Step 3: Implement Code (Until Tests Pass)**
+### **Step 3: Review Tests for Completeness (CRITICAL - Four-Eyes Principle)**
+
+**🎭 Role: Senior Architect/Developer** - Verify tests comprehensively cover all requirements
+
+**STOP. Before implementing ANY code, review the tests you just wrote.**
+
+**This step prevents the need to change BOTH tests AND code later. Catch gaps now.**
+
+#### **Test Review Checklist:**
+
+Cross-reference tests against Step 1 (Pre-Implementation Checklist):
+
+- [ ] **Every BR from Step 1 has at least one test**
+  - Go through your BR list: BR-001, BR-002, etc.
+  - For EACH BR, verify: "Which test validates this BR?"
+  - If no test exists for a BR, ADD IT NOW
+
+- [ ] **Every edge case from Step 1 has a test**
+  - Date boundaries? ✓ Test exists
+  - Multi-month overlaps? ✓ Test exists
+  - Concurrent actions? ✓ Test exists
+  - Empty states, max values? ✓ Tests exist
+
+- [ ] **Every acceptance criterion has a test**
+  - Go through the user story's acceptance criteria checkboxes
+  - For EACH checkbox, verify: "Which test validates this?"
+  - If no test exists for a criterion, ADD IT NOW
+
+- [ ] **Every German copy string has a test**
+  - Error messages validated in tests
+  - Success messages validated in tests
+  - Exact wording verified (not just "error occurs")
+
+- [ ] **Schema validation tests exist** (if data layer work)
+  - String length constraints match migration
+  - Nullable/non-nullable correct
+  - Foreign keys, indexes present
+
+- [ ] **Performance tests exist** (if query work)
+  - N+1 query prevention verified
+  - Eager loading tested
+  - Index usage verified
+
+- [ ] **Concurrency tests exist** (if BR-024 or BR-029 apply)
+  - Race conditions tested
+  - SELECT FOR UPDATE verified
+  - First-wins behavior tested
+
+#### **Ask Yourself:**
+
+1. "If I run these tests and they all pass, am I 100% confident the implementation is correct?"
+2. "What could still go wrong even if these tests pass?"
+3. "Are there any gaps between the requirements (Step 1) and the tests (Step 2)?"
+
+#### **If Gaps Found:**
+
+**DO NOT PROCEED TO IMPLEMENTATION.**
+
+1. Add missing tests to Step 2
+2. Update test plan documentation
+3. Verify new tests fail
+4. Return to this checklist and verify completeness again
+
+#### **Only When:**
+
+- [ ] All Step 1 requirements have corresponding tests
+- [ ] All edge cases have tests
+- [ ] All acceptance criteria have tests
+- [ ] No gaps identified
+
+**THEN proceed to Step 4 (Implementation).**
+
+---
+
+### **Step 4: Implement Code (Until Tests Pass)**
+
+**🎭 Role: Implementation Specialist** - Write code to make tests pass
 
 **Now and only now, write implementation code.**
 
@@ -196,7 +329,9 @@ async def list_for_calendar(
 
 ---
 
-### **Step 4: Verify Tests Pass**
+### **Step 5: Verify Tests Pass**
+
+**🎭 Role: Quality Assurance** - Ensure all quality gates pass
 
 Run the full test suite:
 
@@ -209,6 +344,7 @@ pytest tests/integration/ -v
 
 # Type checking
 mypy app/
+python -m mypy app/  # If mypy.ini has issues
 
 # Linting
 ruff check app/
@@ -218,9 +354,11 @@ ruff check app/
 
 ---
 
-### **Step 5: Code Review (Self-Review)**
+### **Step 6: Final Code Review (Self-Review)**
 
-**Before committing, review your own code as a critical senior developer:**
+**🎭 Role: Critical Senior Developer** - Final verification before commit
+
+**Before committing, review your own code one final time:**
 
 Ask yourself:
 - [ ] Do all String columns specify length constraints matching migration?
@@ -230,12 +368,13 @@ Ask yourself:
 - [ ] Are return types correct (Booking not Approval)?
 - [ ] Is all German copy exact from specifications?
 - [ ] Are all edge cases handled?
+- [ ] Did I follow the exact patterns from the test review (Step 3)?
 
 **If unsure, ask the user for a review before proceeding.**
 
 ---
 
-### **Step 6: Commit and Push**
+### **Step 7: Commit and Push**
 
 ```bash
 git add .
@@ -256,15 +395,28 @@ git push -u origin <branch>
 5. Tests passed because they tested the WRONG implementation
 6. 17 issues found only during manual code review
 
-### **With TDD (This Process):**
+### **With TDD but Without Test Review:**
 
-1. Write test: "model column must be String(254)"
-2. Test FAILS (because model has no String type)
-3. Fix model: add `String(254)`
-4. Test PASSES
-5. Impossible to have schema drift
+1. Write tests based on understanding
+2. Miss edge case (multi-month booking overlap)
+3. Implement code
+4. Tests pass, but edge case not covered
+5. Bug found in production or late review
+6. Must fix BOTH tests AND code
 
-**TDD makes bugs impossible, not just unlikely.**
+### **With This Process (7-Step TDD with Four-Eyes Test Review):**
+
+1. **Step 1 (Requirements Analyst):** Identify BR-002 (multi-month overlaps must be detected)
+2. **Step 2 (Test Engineer):** Write tests for basic conflict detection
+3. **Step 3 (Architect Review):** "Wait, BR-002 says multi-month overlaps. Where's the test for Jan 15-Mar 15 overlapping Feb 1-28?"
+4. **Step 3 (Loop back):** Add missing test: `test_conflict_multi_month`
+5. **Step 3 (Verify):** All BRs covered, proceed to implementation
+6. **Step 4 (Implementation):** Write code to pass ALL tests (including the multi-month one)
+7. **Steps 5-7:** Verify, review, commit
+
+**Result:** Bug impossible because test was added BEFORE implementation.
+
+**TDD + Test Review makes bugs impossible, not just unlikely.**
 
 ## Phase Dependencies
 
@@ -381,11 +533,12 @@ Specify exact source of ALL German text:
 ## Critical Testing Requirements
 
 **Every phase must have:**
-- [ ] **Pre-implementation checklist completed** (Step 1 above)
-- [ ] **All test cases written BEFORE code** (Step 2 above)
-- [ ] **Tests fail initially** (Step 2C above)
-- [ ] **Code implemented until tests pass** (Step 3 above)
-- [ ] **Self-review completed** (Step 5 above)
+- [ ] **Pre-implementation checklist completed** (Step 1)
+- [ ] **All test cases written BEFORE code** (Step 2)
+- [ ] **Tests reviewed for completeness** (Step 3 - Four-Eyes Review)
+- [ ] **Tests fail initially** (Step 2C)
+- [ ] **Code implemented until tests pass** (Step 4)
+- [ ] **Self-review completed** (Step 6)
 - Gherkin scenarios (Given/When/Then)
 - API tests (pytest)
 - Web tests (playwright) if UI involved
@@ -413,8 +566,9 @@ ruff check app/
 
 **Complete this checklist before considering phase done:**
 
-- [ ] **Pre-implementation checklist completed** for all user stories
-- [ ] **All tests written FIRST** (before implementation)
+- [ ] **Pre-implementation checklist completed** for all user stories (Step 1)
+- [ ] **All tests written FIRST** (before implementation) (Step 2)
+- [ ] **Tests reviewed for completeness** (Step 3 - Four-Eyes Review passed)
 - [ ] All Gherkin scenarios pass
 - [ ] All pytest tests pass (unit + integration)
 - [ ] All Playwright tests pass (if frontend phase)
