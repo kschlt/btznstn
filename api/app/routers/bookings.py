@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db_session
+from app.core.database import get_db
 from app.schemas.booking import BookingCreate, BookingResponse
 from app.services.booking_service import BookingService
 
@@ -38,7 +38,7 @@ router = APIRouter(prefix="/api/v1/bookings", tags=["bookings"])
 )
 async def create_booking(
     booking_data: BookingCreate,
-    db: AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db),
 ) -> BookingResponse:
     """
     Create a new booking.
@@ -60,7 +60,7 @@ async def create_booking(
             if "überschneidet" in str(e)
             else status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         # Unexpected errors
         raise HTTPException(

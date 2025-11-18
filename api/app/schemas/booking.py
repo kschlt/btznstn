@@ -2,11 +2,10 @@
 
 import re
 from datetime import date, datetime
-from typing import Any
 from uuid import UUID
-
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from zoneinfo import ZoneInfo
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.models.enums import AffiliationEnum, StatusEnum
 
@@ -21,7 +20,7 @@ FUTURE_HORIZON_MONTHS = 18  # BR-026
 LONG_STAY_DAYS = 7  # BR-027
 
 # Validation patterns
-FIRST_NAME_PATTERN = re.compile(r"^[A-Za-zÀ-ÿ\s'\-]+$")  # BR-019
+FIRST_NAME_PATTERN = re.compile(r"^[A-Za-zÀ-ÿ '\-]+$")  # BR-019 (space, not \s to exclude newlines)
 LINK_PATTERNS = [
     re.compile(r"https?://", re.IGNORECASE),  # http:// or https://
     re.compile(r"www\.", re.IGNORECASE),  # www.
@@ -160,14 +159,16 @@ class BookingCreate(BaseModel):
         future_limit = today + relativedelta(months=FUTURE_HORIZON_MONTHS)
         if self.start_date > future_limit:
             raise ValueError(
-                f"Anfragen dürfen nur maximal {FUTURE_HORIZON_MONTHS} Monate im Voraus gestellt werden."
+                f"Anfragen dürfen nur maximal {FUTURE_HORIZON_MONTHS} Monate "
+                "im Voraus gestellt werden."
             )
 
         # BR-027: Long stay warning (total_days > 7)
         total_days = (self.end_date - self.start_date).days + 1  # Inclusive per BR-001
         if total_days > LONG_STAY_DAYS and not self.long_stay_confirmed:
             raise ValueError(
-                f"Die Anfrage ist für {total_days} Tage. Bitte bestätige, dass du einen längeren Aufenthalt planst."
+                f"Die Anfrage ist für {total_days} Tage. "
+                "Bitte bestätige, dass du einen längeren Aufenthalt planst."
             )
 
         return self
@@ -176,16 +177,13 @@ class BookingCreate(BaseModel):
 class ApprovalResponse(BaseModel):
     """Approval information in booking response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     party: AffiliationEnum
     decision: str  # DecisionEnum as string
     decided_at: datetime | None
     comment: str | None
-
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
 
 
 class BookingResponse(BaseModel):
@@ -196,6 +194,8 @@ class BookingResponse(BaseModel):
     - Excludes requester_email (only visible with valid token)
     - Includes public fields for calendar display
     """
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     requester_first_name: str
@@ -213,11 +213,6 @@ class BookingResponse(BaseModel):
     # Related data (included in authenticated responses)
     approvals: list[ApprovalResponse] | None = None
 
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
-
 
 class PublicBookingResponse(BaseModel):
     """
@@ -228,6 +223,8 @@ class PublicBookingResponse(BaseModel):
     - Only shows data needed for public calendar
     """
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     requester_first_name: str
     start_date: date
@@ -237,8 +234,3 @@ class PublicBookingResponse(BaseModel):
     affiliation: AffiliationEnum
     status: StatusEnum
     is_past: bool  # Calculated per BR-014: end_date < today (Europe/Berlin)
-
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True

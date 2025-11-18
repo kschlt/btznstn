@@ -1,7 +1,6 @@
 """Booking business logic service."""
 
-from datetime import date, datetime
-from uuid import UUID
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +27,7 @@ APPROVER_EMAILS = {
 class BookingService:
     """Service for booking business logic."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
         """Initialize service with database session."""
         self.session = session
         self.booking_repo = BookingRepository(session)
@@ -77,6 +76,8 @@ class BookingService:
             )
 
         # Create booking entity
+        # Note: timestamps are timezone-naive but implicitly Europe/Berlin
+        now = datetime.now(BERLIN_TZ).replace(tzinfo=None)
         booking = Booking(
             requester_first_name=booking_data.requester_first_name,
             requester_email=booking_data.requester_email,
@@ -87,9 +88,9 @@ class BookingService:
             affiliation=booking_data.affiliation,
             description=booking_data.description,
             status=StatusEnum.PENDING,
-            created_at=datetime.now(BERLIN_TZ),
-            updated_at=datetime.now(BERLIN_TZ),
-            last_activity_at=datetime.now(BERLIN_TZ),
+            created_at=now,
+            updated_at=now,
+            last_activity_at=now,
         )
 
         # Save booking (generates ID)
@@ -107,7 +108,7 @@ class BookingService:
                 booking_id=booking.id,
                 party=party,
                 decision=DecisionEnum.APPROVED if is_self_approval else DecisionEnum.NO_RESPONSE,
-                decided_at=datetime.now(BERLIN_TZ) if is_self_approval else None,
+                decided_at=now if is_self_approval else None,
                 comment=None,
             )
 
@@ -117,7 +118,7 @@ class BookingService:
             if is_self_approval:
                 timeline_event = TimelineEvent(
                     booking_id=booking.id,
-                    when=datetime.now(BERLIN_TZ),
+                    when=now,
                     actor=booking.requester_first_name,
                     event_type="SelfApproved",
                     note=f"{party.value} (self-approval)",
@@ -138,8 +139,8 @@ class BookingService:
         await self.session.commit()
 
         # Reload with approvals
-        booking = await self.booking_repo.get_with_approvals(booking.id)
-        if booking is None:
+        reloaded_booking = await self.booking_repo.get_with_approvals(booking.id)
+        if reloaded_booking is None:
             raise RuntimeError("Booking not found after creation")
 
-        return booking
+        return reloaded_booking

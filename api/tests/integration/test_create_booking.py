@@ -26,7 +26,7 @@ from uuid import UUID
 
 import pytest
 from dateutil.relativedelta import relativedelta
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,7 +53,7 @@ def get_today() -> date:
 @pytest.mark.asyncio
 async def test_create_booking_success(db_session: AsyncSession):
     """Test basic booking creation with all valid fields."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = today + timedelta(days=14)
@@ -115,7 +115,7 @@ async def test_create_booking_success(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_response_excludes_email(db_session: AsyncSession):
     """Test privacy: response does not include requester_email."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = today + timedelta(days=12)
@@ -145,9 +145,9 @@ async def test_response_excludes_email(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_total_days_same_day():
+async def test_total_days_same_day(db_session: AsyncSession):
     """Test BR-001: Jan 1-1 = 1 day (not 0)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         same_date = today + timedelta(days=10)
 
@@ -169,9 +169,9 @@ async def test_total_days_same_day():
 
 
 @pytest.mark.asyncio
-async def test_total_days_multi_day():
+async def test_total_days_multi_day(db_session: AsyncSession):
     """Test BR-001: Jan 1-5 = 5 days (not 4)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=4)  # 5 days total
@@ -194,9 +194,9 @@ async def test_total_days_multi_day():
 
 
 @pytest.mark.asyncio
-async def test_total_days_leap_year():
+async def test_total_days_leap_year(db_session: AsyncSession):
     """Test BR-001: Feb 28-29 in leap year = 2 days."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # 2024 is a leap year
         response = await client.post(
             "/api/v1/bookings",
@@ -225,7 +225,7 @@ async def test_total_days_leap_year():
 @pytest.mark.asyncio
 async def test_conflict_exact_match(db_session: AsyncSession):
     """Test BR-002: Aug 1-5 conflicts with Aug 1-5."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=30)
         end_date = start_date + timedelta(days=4)
@@ -266,7 +266,7 @@ async def test_conflict_exact_match(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_conflict_partial_start(db_session: AsyncSession):
     """Test BR-002: Aug 3-8 conflicts with Aug 1-5."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date1 = today + timedelta(days=30)
         end_date1 = start_date1 + timedelta(days=4)  # Aug 1-5
@@ -307,7 +307,7 @@ async def test_conflict_partial_start(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_conflict_partial_end(db_session: AsyncSession):
     """Test BR-002: Jul 28-Aug 2 conflicts with Aug 1-5."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date1 = today + timedelta(days=30)
         end_date1 = start_date1 + timedelta(days=4)  # Aug 1-5
@@ -348,7 +348,7 @@ async def test_conflict_partial_end(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_conflict_enclosure(db_session: AsyncSession):
     """Test BR-002: Aug 2-4 conflicts with Aug 1-5 (enclosed within)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date1 = today + timedelta(days=30)
         end_date1 = start_date1 + timedelta(days=4)  # Aug 1-5
@@ -389,19 +389,24 @@ async def test_conflict_enclosure(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_conflict_multi_month(db_session: AsyncSession):
     """
-    Test BR-002: Jan 15-Mar 15 conflicts with Feb 1-28 (CRITICAL edge case).
+    Test BR-002: Multi-month booking conflicts (CRITICAL edge case).
 
     This is the multi-month overlap bug from Phase 1 Issue #4.
+    Tests that a booking spanning 3 months conflicts with a booking in the middle month.
     """
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        # Create long booking spanning 3 months
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        today = get_today()
+        # Create long booking spanning ~3 months (60 days)
+        start_date1 = today + timedelta(days=30)
+        end_date1 = start_date1 + timedelta(days=60)  # ~2 months
+
         response1 = await client.post(
             "/api/v1/bookings",
             json={
                 "requester_first_name": "LongStay",
                 "requester_email": "long@example.com",
-                "start_date": "2025-01-15",
-                "end_date": "2025-03-15",
+                "start_date": start_date1.isoformat(),
+                "end_date": end_date1.isoformat(),
                 "party_size": 2,
                 "affiliation": "Ingeborg",
                 "long_stay_confirmed": True,  # > 7 days
@@ -409,14 +414,17 @@ async def test_conflict_multi_month(db_session: AsyncSession):
         )
         assert response1.status_code == 201
 
-        # Try to book Feb 1-28 (middle month) - should conflict
+        # Try to book middle period - should conflict
+        start_date2 = start_date1 + timedelta(days=15)
+        end_date2 = start_date2 + timedelta(days=28)
+
         response2 = await client.post(
             "/api/v1/bookings",
             json={
                 "requester_first_name": "February",
                 "requester_email": "feb@example.com",
-                "start_date": "2025-02-01",
-                "end_date": "2025-02-28",
+                "start_date": start_date2.isoformat(),
+                "end_date": end_date2.isoformat(),
                 "party_size": 3,
                 "affiliation": "Cornelia",
                 "long_stay_confirmed": True,
@@ -449,7 +457,7 @@ async def test_no_conflict_denied(db_session: AsyncSession):
     await db_session.commit()
 
     # Try to create booking for same dates - should succeed (Denied doesn't block)
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/api/v1/bookings",
             json={
@@ -486,7 +494,7 @@ async def test_no_conflict_canceled(db_session: AsyncSession):
     await db_session.commit()
 
     # Try to create booking for same dates - should succeed
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/api/v1/bookings",
             json={
@@ -503,9 +511,9 @@ async def test_no_conflict_canceled(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_conflict_returns_german_error():
+async def test_conflict_returns_german_error(db_session: AsyncSession):
     """Test BR-002 + BR-011: Error message format is correct German."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=30)
         end_date = start_date + timedelta(days=4)
@@ -554,7 +562,7 @@ async def test_conflict_returns_german_error():
 @pytest.mark.asyncio
 async def test_three_approvals_created(db_session: AsyncSession):
     """Test BR-003: Exactly 3 approval records created."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -585,7 +593,7 @@ async def test_three_approvals_created(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_approvals_no_response(db_session: AsyncSession):
     """Test BR-003: All approvals have decision=NoResponse (for non-approver)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -617,7 +625,7 @@ async def test_approvals_no_response(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_approvals_decided_at_null(db_session: AsyncSession):
     """Test BR-003: All approvals have decided_at=NULL (for non-approver)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -649,7 +657,7 @@ async def test_approvals_decided_at_null(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_approvals_parties(db_session: AsyncSession):
     """Test BR-003: Ingeborg, Cornelia, Angelika all present."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -690,7 +698,7 @@ async def test_approvals_parties(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_self_approval_ingeborg(db_session: AsyncSession):
     """Test BR-015: Ingeborg creates → Ingeborg approval auto-approved."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -738,7 +746,7 @@ async def test_self_approval_ingeborg(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_self_approval_cornelia(db_session: AsyncSession):
     """Test BR-015: Cornelia creates → Cornelia approval auto-approved."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -773,7 +781,7 @@ async def test_self_approval_cornelia(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_self_approval_angelika(db_session: AsyncSession):
     """Test BR-015: Angelika creates → Angelika approval auto-approved."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -808,7 +816,7 @@ async def test_self_approval_angelika(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_no_self_approval_non_approver(db_session: AsyncSession):
     """Test BR-015: Non-approver creates → all 3 NoResponse."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -842,7 +850,7 @@ async def test_no_self_approval_non_approver(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_self_approval_timeline_event(db_session: AsyncSession):
     """Test BR-015: Timeline event created for self-approval."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -881,9 +889,9 @@ async def test_self_approval_timeline_event(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_party_size_zero_fails():
+async def test_party_size_zero_fails(db_session: AsyncSession):
     """Test BR-017: party_size=0 rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -904,9 +912,9 @@ async def test_party_size_zero_fails():
 
 
 @pytest.mark.asyncio
-async def test_party_size_one_succeeds():
+async def test_party_size_one_succeeds(db_session: AsyncSession):
     """Test BR-017: party_size=1 accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -927,9 +935,9 @@ async def test_party_size_one_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_party_size_ten_succeeds():
+async def test_party_size_ten_succeeds(db_session: AsyncSession):
     """Test BR-017: party_size=10 accepted (boundary)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -950,9 +958,9 @@ async def test_party_size_ten_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_party_size_eleven_fails():
+async def test_party_size_eleven_fails(db_session: AsyncSession):
     """Test BR-017: party_size=11 rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -973,9 +981,9 @@ async def test_party_size_eleven_fails():
 
 
 @pytest.mark.asyncio
-async def test_party_size_negative_fails():
+async def test_party_size_negative_fails(db_session: AsyncSession):
     """Test BR-017: party_size=-1 rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -996,9 +1004,9 @@ async def test_party_size_negative_fails():
 
 
 @pytest.mark.asyncio
-async def test_party_size_non_integer_fails():
+async def test_party_size_non_integer_fails(db_session: AsyncSession):
     """Test BR-017: party_size=3.5 rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1024,9 +1032,9 @@ async def test_party_size_non_integer_fails():
 
 
 @pytest.mark.asyncio
-async def test_first_name_valid_simple():
+async def test_first_name_valid_simple(db_session: AsyncSession):
     """Test BR-019: 'Anna' accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1047,9 +1055,9 @@ async def test_first_name_valid_simple():
 
 
 @pytest.mark.asyncio
-async def test_first_name_hyphen():
+async def test_first_name_hyphen(db_session: AsyncSession):
     """Test BR-019: 'Marie-Claire' accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1070,9 +1078,9 @@ async def test_first_name_hyphen():
 
 
 @pytest.mark.asyncio
-async def test_first_name_apostrophe():
+async def test_first_name_apostrophe(db_session: AsyncSession):
     """Test BR-019: 'O'Brien' accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1093,9 +1101,9 @@ async def test_first_name_apostrophe():
 
 
 @pytest.mark.asyncio
-async def test_first_name_umlaut():
+async def test_first_name_umlaut(db_session: AsyncSession):
     """Test BR-019: 'Müller' accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1116,9 +1124,9 @@ async def test_first_name_umlaut():
 
 
 @pytest.mark.asyncio
-async def test_first_name_diacritic():
+async def test_first_name_diacritic(db_session: AsyncSession):
     """Test BR-019: 'José' accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1139,9 +1147,9 @@ async def test_first_name_diacritic():
 
 
 @pytest.mark.asyncio
-async def test_first_name_emoji_rejected():
+async def test_first_name_emoji_rejected(db_session: AsyncSession):
     """Test BR-019: 'Anna 😊' rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1163,9 +1171,9 @@ async def test_first_name_emoji_rejected():
 
 
 @pytest.mark.asyncio
-async def test_first_name_max_length():
+async def test_first_name_max_length(db_session: AsyncSession):
     """Test BR-019: 'A' * 40 accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1186,9 +1194,9 @@ async def test_first_name_max_length():
 
 
 @pytest.mark.asyncio
-async def test_first_name_too_long():
+async def test_first_name_too_long(db_session: AsyncSession):
     """Test BR-019: 'A' * 41 rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1209,9 +1217,9 @@ async def test_first_name_too_long():
 
 
 @pytest.mark.asyncio
-async def test_first_name_trimmed():
+async def test_first_name_trimmed(db_session: AsyncSession):
     """Test BR-019: '  Anna  ' trimmed to 'Anna'."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1233,9 +1241,9 @@ async def test_first_name_trimmed():
 
 
 @pytest.mark.asyncio
-async def test_first_name_empty_after_trim():
+async def test_first_name_empty_after_trim(db_session: AsyncSession):
     """Test BR-019: '   ' rejected (empty after trim)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1256,9 +1264,9 @@ async def test_first_name_empty_after_trim():
 
 
 @pytest.mark.asyncio
-async def test_first_name_newline_rejected():
+async def test_first_name_newline_rejected(db_session: AsyncSession):
     """Test BR-019: 'Anna\\nTest' rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1284,9 +1292,9 @@ async def test_first_name_newline_rejected():
 
 
 @pytest.mark.asyncio
-async def test_description_no_links_succeeds():
+async def test_description_no_links_succeeds(db_session: AsyncSession):
     """Test BR-020: 'Family reunion' accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1308,9 +1316,9 @@ async def test_description_no_links_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_description_https_rejected():
+async def test_description_https_rejected(db_session: AsyncSession):
     """Test BR-020: 'Visit https://example.com' rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1333,9 +1341,9 @@ async def test_description_https_rejected():
 
 
 @pytest.mark.asyncio
-async def test_description_http_rejected():
+async def test_description_http_rejected(db_session: AsyncSession):
     """Test BR-020: 'Visit http://example.com' rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1357,9 +1365,9 @@ async def test_description_http_rejected():
 
 
 @pytest.mark.asyncio
-async def test_description_www_rejected():
+async def test_description_www_rejected(db_session: AsyncSession):
     """Test BR-020: 'Visit www.example.com' rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1381,9 +1389,9 @@ async def test_description_www_rejected():
 
 
 @pytest.mark.asyncio
-async def test_description_mailto_rejected():
+async def test_description_mailto_rejected(db_session: AsyncSession):
     """Test BR-020: 'Email mailto:test@example.com' rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1405,9 +1413,9 @@ async def test_description_mailto_rejected():
 
 
 @pytest.mark.asyncio
-async def test_description_case_insensitive():
+async def test_description_case_insensitive(db_session: AsyncSession):
     """Test BR-020: 'HTTP://', 'WWW', 'MAILTO:' rejected (case-insensitive)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=2)
@@ -1435,9 +1443,9 @@ async def test_description_case_insensitive():
 
 
 @pytest.mark.asyncio
-async def test_end_date_today_succeeds():
+async def test_end_date_today_succeeds(db_session: AsyncSession):
     """Test BR-014: Booking ending today accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
 
         response = await client.post(
@@ -1456,9 +1464,9 @@ async def test_end_date_today_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_end_date_yesterday_fails():
+async def test_end_date_yesterday_fails(db_session: AsyncSession):
     """Test BR-014: Booking ending yesterday rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         yesterday = today - timedelta(days=1)
 
@@ -1479,11 +1487,11 @@ async def test_end_date_yesterday_fails():
 
 
 @pytest.mark.asyncio
-async def test_end_date_timezone():
+async def test_end_date_timezone(db_session: AsyncSession):
     """Test BR-014: Timezone edge case (Europe/Berlin)."""
     # This test verifies timezone handling is correct
     # Detailed timezone edge case testing would be more complex
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
 
         response = await client.post(
@@ -1507,9 +1515,9 @@ async def test_end_date_timezone():
 
 
 @pytest.mark.asyncio
-async def test_start_17_months_succeeds():
+async def test_start_17_months_succeeds(db_session: AsyncSession):
     """Test BR-026: Booking starting in 17 months accepted."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + relativedelta(months=17)
         end_date = start_date + timedelta(days=2)
@@ -1530,9 +1538,9 @@ async def test_start_17_months_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_start_18_months_succeeds():
+async def test_start_18_months_succeeds(db_session: AsyncSession):
     """Test BR-026: Booking starting in 18 months accepted (boundary)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + relativedelta(months=18)
         end_date = start_date + timedelta(days=2)
@@ -1553,9 +1561,9 @@ async def test_start_18_months_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_start_19_months_fails():
+async def test_start_19_months_fails(db_session: AsyncSession):
     """Test BR-026: Booking starting in 19 months rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + relativedelta(months=19)
         end_date = start_date + timedelta(days=2)
@@ -1577,9 +1585,9 @@ async def test_start_19_months_fails():
 
 
 @pytest.mark.asyncio
-async def test_future_horizon_timezone():
+async def test_future_horizon_timezone(db_session: AsyncSession):
     """Test BR-026: Timezone edge case (Europe/Berlin)."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + relativedelta(months=18)
         end_date = start_date + timedelta(days=1)
@@ -1606,9 +1614,9 @@ async def test_future_horizon_timezone():
 
 
 @pytest.mark.asyncio
-async def test_7_days_no_confirmation_succeeds():
+async def test_7_days_no_confirmation_succeeds(db_session: AsyncSession):
     """Test BR-027: 7-day booking succeeds without flag."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=6)  # 7 days
@@ -1629,9 +1637,9 @@ async def test_7_days_no_confirmation_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_8_days_no_confirmation_returns_warning():
+async def test_8_days_no_confirmation_returns_warning(db_session: AsyncSession):
     """Test BR-027: 8-day booking without flag returns error."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=7)  # 8 days
@@ -1654,9 +1662,9 @@ async def test_8_days_no_confirmation_returns_warning():
 
 
 @pytest.mark.asyncio
-async def test_8_days_with_confirmation_succeeds():
+async def test_8_days_with_confirmation_succeeds(db_session: AsyncSession):
     """Test BR-027: 8-day booking with flag succeeds."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=7)  # 8 days
@@ -1678,9 +1686,9 @@ async def test_8_days_with_confirmation_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_30_days_with_confirmation_succeeds():
+async def test_30_days_with_confirmation_succeeds(db_session: AsyncSession):
     """Test BR-027: 30-day booking with flag succeeds."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
         start_date = today + timedelta(days=10)
         end_date = start_date + timedelta(days=29)  # 30 days
@@ -1707,9 +1715,9 @@ async def test_30_days_with_confirmation_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_german_error_messages():
+async def test_german_error_messages(db_session: AsyncSession):
     """Test BR-011: All validation errors return correct German text."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         today = get_today()
 
         # Test conflict error
