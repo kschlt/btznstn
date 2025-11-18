@@ -18,6 +18,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from zoneinfo import ZoneInfo
 
+from app.core.tokens import generate_token
 from app.main import app
 from app.models.approval import Approval
 from app.models.booking import Booking
@@ -243,33 +244,244 @@ async def test_get_public_excludes_description(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_get_with_requester_token(db_session: AsyncSession):
     """Test: Valid requester token returns full details with approvals and timeline."""
-    # TODO: This test requires token implementation
-    # For now, mark as placeholder
-    pytest.skip("Token implementation pending")
+    today = get_today()
+
+    # Create booking with approvals and timeline
+    booking = Booking(
+        requester_first_name="TokenUser",
+        requester_email="token@example.com",
+        start_date=today + timedelta(days=10),
+        end_date=today + timedelta(days=14),
+        total_days=5,
+        party_size=4,
+        affiliation=AffiliationEnum.INGEBORG,
+        description="Secret details",
+        status=StatusEnum.PENDING,
+        created_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        updated_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        last_activity_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+    )
+    db_session.add(booking)
+    await db_session.commit()
+    await db_session.refresh(booking)
+
+    # Create approvals
+    for party in [AffiliationEnum.INGEBORG, AffiliationEnum.CORNELIA, AffiliationEnum.ANGELIKA]:
+        approval = Approval(
+            booking_id=booking.id,
+            party=party,
+            decision=DecisionEnum.NO_RESPONSE,
+            decided_at=None,
+            comment=None,
+        )
+        db_session.add(approval)
+
+    # Create timeline event
+    timeline_event = TimelineEvent(
+        booking_id=booking.id,
+        when=booking.created_at,
+        actor=booking.requester_first_name,
+        event_type="Created",
+        note=None,
+    )
+    db_session.add(timeline_event)
+    await db_session.commit()
+
+    # Generate requester token
+    token = generate_token({
+        "email": "token@example.com",
+        "role": "requester",
+        "booking_id": str(booking.id),
+    })
+
+    # GET with token
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(f"/api/v1/bookings/{booking.id}?token={token}")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should include all fields
+    assert data["id"] == str(booking.id)
+    assert data["requester_first_name"] == "TokenUser"
+    assert data["description"] == "Secret details"
+    assert data["is_past"] is False
+
+    # Should include approvals
+    assert "approvals" in data
+    assert len(data["approvals"]) == 3
+
+    # Should include timeline_events
+    assert "timeline_events" in data
+    assert len(data["timeline_events"]) == 1
+    assert data["timeline_events"][0]["event_type"] == "Created"
 
 
 @pytest.mark.asyncio
 async def test_get_with_approver_token(db_session: AsyncSession):
     """Test: Valid approver token returns full details."""
-    pytest.skip("Token implementation pending")
+    today = get_today()
+
+    booking = Booking(
+        requester_first_name="ApproverTest",
+        requester_email="requester@example.com",
+        start_date=today + timedelta(days=10),
+        end_date=today + timedelta(days=14),
+        total_days=5,
+        party_size=3,
+        affiliation=AffiliationEnum.CORNELIA,
+        status=StatusEnum.PENDING,
+        created_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        updated_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        last_activity_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+    )
+    db_session.add(booking)
+    await db_session.commit()
+    await db_session.refresh(booking)
+
+    # Generate approver token (Ingeborg)
+    token = generate_token({
+        "email": "ingeborg@example.com",
+        "role": "approver",
+        "party": "Ingeborg",
+        "booking_id": str(booking.id),
+    })
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(f"/api/v1/bookings/{booking.id}?token={token}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "approvals" in data
 
 
 @pytest.mark.asyncio
 async def test_get_denied_with_token(db_session: AsyncSession):
     """Test BR-004: Denied booking accessible with valid token."""
-    pytest.skip("Token implementation pending")
+    today = get_today()
+
+    # Create Denied booking
+    booking = Booking(
+        requester_first_name="DeniedToken",
+        requester_email="denied@example.com",
+        start_date=today + timedelta(days=10),
+        end_date=today + timedelta(days=14),
+        total_days=5,
+        party_size=2,
+        affiliation=AffiliationEnum.ANGELIKA,
+        status=StatusEnum.DENIED,
+        created_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        updated_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        last_activity_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+    )
+    db_session.add(booking)
+    await db_session.commit()
+    await db_session.refresh(booking)
+
+    # Without token should return 404
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response_no_token = await client.get(f"/api/v1/bookings/{booking.id}")
+    assert response_no_token.status_code == 404
+
+    # With valid requester token should return 200
+    token = generate_token({
+        "email": "denied@example.com",
+        "role": "requester",
+        "booking_id": str(booking.id),
+    })
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response_with_token = await client.get(f"/api/v1/bookings/{booking.id}?token={token}")
+
+    assert response_with_token.status_code == 200
+    data = response_with_token.json()
+    assert data["status"] == "Denied"
 
 
 @pytest.mark.asyncio
 async def test_get_invalid_token_401(db_session: AsyncSession):
     """Test: Invalid token signature returns 401 with German error."""
-    pytest.skip("Token implementation pending")
+    today = get_today()
+    booking = Booking(
+        requester_first_name="Auth",
+        requester_email="auth@example.com",
+        start_date=today + timedelta(days=10),
+        end_date=today + timedelta(days=14),
+        total_days=5,
+        party_size=4,
+        affiliation=AffiliationEnum.INGEBORG,
+        status=StatusEnum.PENDING,
+        created_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        updated_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        last_activity_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+    )
+    db_session.add(booking)
+    await db_session.commit()
+    await db_session.refresh(booking)
+
+    # Invalid token signature
+    invalid_token = "invalid_token_signature"
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(f"/api/v1/bookings/{booking.id}?token={invalid_token}")
+
+    assert response.status_code == 401
+    detail = response.json()["detail"]
+    assert "Ungültiger Zugangslink." == detail
 
 
 @pytest.mark.asyncio
 async def test_get_wrong_booking_token_403(db_session: AsyncSession):
     """Test: Token for different booking returns 403 with German error."""
-    pytest.skip("Token implementation pending")
+    today = get_today()
+
+    # Create two bookings
+    booking1 = Booking(
+        requester_first_name="User1",
+        requester_email="user1@example.com",
+        start_date=today + timedelta(days=10),
+        end_date=today + timedelta(days=14),
+        total_days=5,
+        party_size=2,
+        affiliation=AffiliationEnum.INGEBORG,
+        status=StatusEnum.PENDING,
+        created_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        updated_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        last_activity_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+    )
+    booking2 = Booking(
+        requester_first_name="User2",
+        requester_email="user2@example.com",
+        start_date=today + timedelta(days=20),
+        end_date=today + timedelta(days=24),
+        total_days=5,
+        party_size=3,
+        affiliation=AffiliationEnum.CORNELIA,
+        status=StatusEnum.PENDING,
+        created_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        updated_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        last_activity_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+    )
+    db_session.add(booking1)
+    db_session.add(booking2)
+    await db_session.commit()
+    await db_session.refresh(booking1)
+    await db_session.refresh(booking2)
+
+    # Generate token for booking1
+    token_for_booking1 = generate_token({
+        "email": "user1@example.com",
+        "role": "requester",
+        "booking_id": str(booking1.id),
+    })
+
+    # Try to access booking2 with booking1's token
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(f"/api/v1/bookings/{booking2.id}?token={token_for_booking1}")
+
+    assert response.status_code == 403
+    detail = response.json()["detail"]
+    assert "Du hast keinen Zugriff auf diesen Eintrag." == detail
 
 
 # ============================================================================
@@ -422,4 +634,54 @@ async def test_german_401(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_german_403(db_session: AsyncSession):
     """Test: 403 error message in German (wrong booking token)."""
-    pytest.skip("Token implementation pending - need valid token for different booking")
+    # This is covered by test_get_wrong_booking_token_403
+    # which already validates the German 403 message
+    today = get_today()
+
+    # Create two bookings
+    booking1 = Booking(
+        requester_first_name="User1",
+        requester_email="user1@example.com",
+        start_date=today + timedelta(days=10),
+        end_date=today + timedelta(days=14),
+        total_days=5,
+        party_size=2,
+        affiliation=AffiliationEnum.INGEBORG,
+        status=StatusEnum.PENDING,
+        created_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        updated_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        last_activity_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+    )
+    booking2 = Booking(
+        requester_first_name="User2",
+        requester_email="user2@example.com",
+        start_date=today + timedelta(days=20),
+        end_date=today + timedelta(days=24),
+        total_days=5,
+        party_size=3,
+        affiliation=AffiliationEnum.CORNELIA,
+        status=StatusEnum.PENDING,
+        created_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        updated_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+        last_activity_at=datetime.now(BERLIN_TZ).replace(tzinfo=None),
+    )
+    db_session.add(booking1)
+    db_session.add(booking2)
+    await db_session.commit()
+    await db_session.refresh(booking1)
+    await db_session.refresh(booking2)
+
+    # Generate token for booking1
+    token_for_booking1 = generate_token({
+        "email": "user1@example.com",
+        "role": "requester",
+        "booking_id": str(booking1.id),
+    })
+
+    # Try to access booking2 with booking1's token
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(f"/api/v1/bookings/{booking2.id}?token={token_for_booking1}")
+
+    assert response.status_code == 403
+    detail = response.json()["detail"]
+    assert "Du hast keinen Zugriff auf diesen Eintrag." == detail
