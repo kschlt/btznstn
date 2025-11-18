@@ -46,11 +46,11 @@ def generate_token(payload: dict[str, Any]) -> str:
         settings.secret_key.encode(),
         message.encode(),
         hashlib.sha256,
-    ).digest()
+    ).hexdigest()
 
-    # Combine message + signature, base64 encode
-    token_bytes = message.encode() + b"." + signature
-    token = base64.urlsafe_b64encode(token_bytes).decode()
+    # Format: base64(message).signature_hex
+    message_b64 = base64.urlsafe_b64encode(message.encode()).decode()
+    token = f"{message_b64}.{signature}"
 
     return token
 
@@ -60,40 +60,40 @@ def verify_token(token: str) -> dict[str, Any] | None:
     Verify token signature and extract payload.
 
     Args:
-        token: Base64-encoded signed token
+        token: Token in format base64(message).signature_hex
 
     Returns:
         Payload dict if valid, None if invalid
 
     Validation:
-        - Base64 decode
-        - Split message and signature
+        - Split message_b64 and signature_hex (separated by '.')
+        - Base64 decode message
         - Verify HMAC-SHA256 signature
         - Parse and return payload
     """
     try:
-        # Base64 decode
-        decoded = base64.urlsafe_b64decode(token.encode())
-
-        # Split message and signature (separated by '.')
-        parts = decoded.split(b".", 1)
+        # Split token: base64(message).signature_hex
+        parts = token.split(".", 1)
         if len(parts) != 2:
             return None
 
-        message, signature = parts
+        message_b64, signature_hex = parts
+
+        # Base64 decode message
+        message = base64.urlsafe_b64decode(message_b64.encode()).decode()
 
         # Verify signature using constant-time comparison
         expected_signature = hmac.new(
             settings.secret_key.encode(),
-            message,
+            message.encode(),
             hashlib.sha256,
-        ).digest()
+        ).hexdigest()
 
-        if not hmac.compare_digest(signature, expected_signature):
+        if not hmac.compare_digest(signature_hex, expected_signature):
             return None  # Invalid signature
 
         # Parse payload
-        payload: dict[str, Any] = json.loads(message.decode())
+        payload: dict[str, Any] = json.loads(message)
         return payload
 
     except Exception:

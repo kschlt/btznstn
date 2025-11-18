@@ -13,8 +13,8 @@ from app.core.database import Base, get_db
 from app.main import app
 
 
-# Use test database
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/btznstn_test"
+# Use test database (same credentials as dev database from Docker Compose)
+TEST_DATABASE_URL = "postgresql+asyncpg://betzenstein:dev_password@localhost:5432/btznstn_test"
 
 
 @pytest.fixture(scope="session")
@@ -69,8 +69,12 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncGenerator[AsyncClient, None]:
-    """Provide an async HTTP client for API testing."""
+async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """
+    Provide an async HTTP client for API testing.
+
+    Depends on db_session to ensure the dependency override is active.
+    """
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:

@@ -204,8 +204,8 @@ async def test_get_public_excludes_description(db_session: AsyncSession, client:
     """Test privacy: Public response does not include description."""
     today = get_today()
     booking = Booking(
-        requester_first_name="Secret",
-        requester_email="secret@example.com",
+        requester_first_name="TestUser",
+        requester_email="test@example.com",
         start_date=today + timedelta(days=10),
         end_date=today + timedelta(days=14),
         total_days=5,
@@ -226,7 +226,8 @@ async def test_get_public_excludes_description(db_session: AsyncSession, client:
     assert response.status_code == 200
     data = response.json()
     assert "description" not in data
-    assert "secret" not in str(data).lower()
+    # Ensure the actual description text is not leaked
+    assert "secret description with sensitive info" not in str(data).lower()
 
 
 # ============================================================================
@@ -278,7 +279,13 @@ async def test_get_with_requester_token(db_session: AsyncSession, client: AsyncC
         note=None,
     )
     db_session.add(timeline_event)
+
+    # Flush and commit to ensure approvals and timeline are persisted
+    await db_session.flush()
     await db_session.commit()
+
+    # Refresh booking to load relationships
+    await db_session.refresh(booking, ["approvals", "timeline_events"])
 
     # Generate requester token
     token = generate_token({
