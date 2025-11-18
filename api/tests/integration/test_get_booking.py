@@ -14,12 +14,11 @@ from datetime import date, datetime, timedelta
 from uuid import UUID
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from zoneinfo import ZoneInfo
 
 from app.core.tokens import generate_token
-from app.main import app
 from app.models.approval import Approval
 from app.models.booking import Booking
 from app.models.enums import AffiliationEnum, DecisionEnum, StatusEnum
@@ -39,7 +38,7 @@ def get_today() -> date:
 
 
 @pytest.mark.asyncio
-async def test_get_public_pending_booking(db_session: AsyncSession):
+async def test_get_public_pending_booking(db_session: AsyncSession, client: AsyncClient):
     """Test public GET on Pending booking returns limited fields."""
     # Create a Pending booking
     today = get_today()
@@ -62,8 +61,7 @@ async def test_get_public_pending_booking(db_session: AsyncSession):
     await db_session.refresh(booking)
 
     # Public GET without token
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -90,7 +88,7 @@ async def test_get_public_pending_booking(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_public_confirmed_booking(db_session: AsyncSession):
+async def test_get_public_confirmed_booking(db_session: AsyncSession, client: AsyncClient):
     """Test public GET on Confirmed booking returns limited fields."""
     today = get_today()
     booking = Booking(
@@ -110,8 +108,7 @@ async def test_get_public_confirmed_booking(db_session: AsyncSession):
     await db_session.commit()
     await db_session.refresh(booking)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -121,7 +118,7 @@ async def test_get_public_confirmed_booking(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_public_denied_booking_404(db_session: AsyncSession):
+async def test_get_public_denied_booking_404(db_session: AsyncSession, client: AsyncClient):
     """Test BR-004: Public GET on Denied booking returns 404."""
     today = get_today()
     booking = Booking(
@@ -141,15 +138,14 @@ async def test_get_public_denied_booking_404(db_session: AsyncSession):
     await db_session.commit()
     await db_session.refresh(booking)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}")
 
     assert response.status_code == 404
     assert "nicht gefunden" in response.json()["detail"]
 
 
 @pytest.mark.asyncio
-async def test_get_public_canceled_booking_404(db_session: AsyncSession):
+async def test_get_public_canceled_booking_404(db_session: AsyncSession, client: AsyncClient):
     """Test BR-004: Public GET on Canceled booking returns 404."""
     today = get_today()
     booking = Booking(
@@ -169,14 +165,13 @@ async def test_get_public_canceled_booking_404(db_session: AsyncSession):
     await db_session.commit()
     await db_session.refresh(booking)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}")
 
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_get_public_excludes_email(db_session: AsyncSession):
+async def test_get_public_excludes_email(db_session: AsyncSession, client: AsyncClient):
     """Test privacy: Public response does not include requester_email."""
     today = get_today()
     booking = Booking(
@@ -196,8 +191,7 @@ async def test_get_public_excludes_email(db_session: AsyncSession):
     await db_session.commit()
     await db_session.refresh(booking)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -206,7 +200,7 @@ async def test_get_public_excludes_email(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_public_excludes_description(db_session: AsyncSession):
+async def test_get_public_excludes_description(db_session: AsyncSession, client: AsyncClient):
     """Test privacy: Public response does not include description."""
     today = get_today()
     booking = Booking(
@@ -227,8 +221,7 @@ async def test_get_public_excludes_description(db_session: AsyncSession):
     await db_session.commit()
     await db_session.refresh(booking)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -242,7 +235,7 @@ async def test_get_public_excludes_description(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_with_requester_token(db_session: AsyncSession):
+async def test_get_with_requester_token(db_session: AsyncSession, client: AsyncClient):
     """Test: Valid requester token returns full details with approvals and timeline."""
     today = get_today()
 
@@ -295,8 +288,7 @@ async def test_get_with_requester_token(db_session: AsyncSession):
     })
 
     # GET with token
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}?token={token}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}?token={token}")
 
     assert response.status_code == 200
     data = response.json()
@@ -318,7 +310,7 @@ async def test_get_with_requester_token(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_with_approver_token(db_session: AsyncSession):
+async def test_get_with_approver_token(db_session: AsyncSession, client: AsyncClient):
     """Test: Valid approver token returns full details."""
     today = get_today()
 
@@ -347,8 +339,7 @@ async def test_get_with_approver_token(db_session: AsyncSession):
         "booking_id": str(booking.id),
     })
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}?token={token}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}?token={token}")
 
     assert response.status_code == 200
     data = response.json()
@@ -356,7 +347,7 @@ async def test_get_with_approver_token(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_denied_with_token(db_session: AsyncSession):
+async def test_get_denied_with_token(db_session: AsyncSession, client: AsyncClient):
     """Test BR-004: Denied booking accessible with valid token."""
     today = get_today()
 
@@ -379,8 +370,7 @@ async def test_get_denied_with_token(db_session: AsyncSession):
     await db_session.refresh(booking)
 
     # Without token should return 404
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response_no_token = await client.get(f"/api/v1/bookings/{booking.id}")
+    response_no_token = await client.get(f"/api/v1/bookings/{booking.id}")
     assert response_no_token.status_code == 404
 
     # With valid requester token should return 200
@@ -390,8 +380,7 @@ async def test_get_denied_with_token(db_session: AsyncSession):
         "booking_id": str(booking.id),
     })
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response_with_token = await client.get(f"/api/v1/bookings/{booking.id}?token={token}")
+    response_with_token = await client.get(f"/api/v1/bookings/{booking.id}?token={token}")
 
     assert response_with_token.status_code == 200
     data = response_with_token.json()
@@ -399,7 +388,7 @@ async def test_get_denied_with_token(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_invalid_token_401(db_session: AsyncSession):
+async def test_get_invalid_token_401(db_session: AsyncSession, client: AsyncClient):
     """Test: Invalid token signature returns 401 with German error."""
     today = get_today()
     booking = Booking(
@@ -422,8 +411,7 @@ async def test_get_invalid_token_401(db_session: AsyncSession):
     # Invalid token signature
     invalid_token = "invalid_token_signature"
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}?token={invalid_token}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}?token={invalid_token}")
 
     assert response.status_code == 401
     detail = response.json()["detail"]
@@ -431,7 +419,7 @@ async def test_get_invalid_token_401(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_wrong_booking_token_403(db_session: AsyncSession):
+async def test_get_wrong_booking_token_403(db_session: AsyncSession, client: AsyncClient):
     """Test: Token for different booking returns 403 with German error."""
     today = get_today()
 
@@ -476,8 +464,7 @@ async def test_get_wrong_booking_token_403(db_session: AsyncSession):
     })
 
     # Try to access booking2 with booking1's token
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking2.id}?token={token_for_booking1}")
+    response = await client.get(f"/api/v1/bookings/{booking2.id}?token={token_for_booking1}")
 
     assert response.status_code == 403
     detail = response.json()["detail"]
@@ -490,7 +477,7 @@ async def test_get_wrong_booking_token_403(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_is_past_yesterday(db_session: AsyncSession):
+async def test_is_past_yesterday(db_session: AsyncSession, client: AsyncClient):
     """Test BR-014: Booking ending yesterday has is_past=true."""
     today = get_today()
     yesterday = today - timedelta(days=1)
@@ -512,8 +499,7 @@ async def test_is_past_yesterday(db_session: AsyncSession):
     await db_session.commit()
     await db_session.refresh(booking)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -521,7 +507,7 @@ async def test_is_past_yesterday(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_is_past_today(db_session: AsyncSession):
+async def test_is_past_today(db_session: AsyncSession, client: AsyncClient):
     """Test BR-014: Booking ending today has is_past=false."""
     today = get_today()
 
@@ -542,8 +528,7 @@ async def test_is_past_today(db_session: AsyncSession):
     await db_session.commit()
     await db_session.refresh(booking)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -551,7 +536,7 @@ async def test_is_past_today(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_is_past_tomorrow(db_session: AsyncSession):
+async def test_is_past_tomorrow(db_session: AsyncSession, client: AsyncClient):
     """Test BR-014: Booking ending tomorrow has is_past=false."""
     today = get_today()
     tomorrow = today + timedelta(days=1)
@@ -573,8 +558,7 @@ async def test_is_past_tomorrow(db_session: AsyncSession):
     await db_session.commit()
     await db_session.refresh(booking)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -587,12 +571,11 @@ async def test_is_past_tomorrow(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_german_404(db_session: AsyncSession):
+async def test_german_404(db_session: AsyncSession, client: AsyncClient):
     """Test: 404 error message in German."""
     fake_uuid = "00000000-0000-0000-0000-000000000000"
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{fake_uuid}")
+    response = await client.get(f"/api/v1/bookings/{fake_uuid}")
 
     assert response.status_code == 404
     detail = response.json()["detail"]
@@ -600,7 +583,7 @@ async def test_german_404(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_german_401(db_session: AsyncSession):
+async def test_german_401(db_session: AsyncSession, client: AsyncClient):
     """Test: 401 error message in German (invalid token)."""
     today = get_today()
     booking = Booking(
@@ -623,8 +606,7 @@ async def test_german_401(db_session: AsyncSession):
     # Invalid token signature
     invalid_token = "invalid_token_signature"
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking.id}?token={invalid_token}")
+    response = await client.get(f"/api/v1/bookings/{booking.id}?token={invalid_token}")
 
     assert response.status_code == 401
     detail = response.json()["detail"]
@@ -632,7 +614,7 @@ async def test_german_401(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_german_403(db_session: AsyncSession):
+async def test_german_403(db_session: AsyncSession, client: AsyncClient):
     """Test: 403 error message in German (wrong booking token)."""
     # This is covered by test_get_wrong_booking_token_403
     # which already validates the German 403 message
@@ -679,8 +661,7 @@ async def test_german_403(db_session: AsyncSession):
     })
 
     # Try to access booking2 with booking1's token
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get(f"/api/v1/bookings/{booking2.id}?token={token_for_booking1}")
+    response = await client.get(f"/api/v1/bookings/{booking2.id}?token={token_for_booking1}")
 
     assert response.status_code == 403
     detail = response.json()["detail"]
