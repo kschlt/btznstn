@@ -174,6 +174,92 @@ class BookingCreate(BaseModel):
         return self
 
 
+class BookingUpdate(BaseModel):
+    """
+    Schema for updating an existing booking (PATCH /api/v1/bookings/{id}).
+
+    All fields are optional (partial updates allowed).
+
+    Validates:
+    - BR-005: Date extend vs shorten logic (handled in service layer)
+    - BR-014: No past dates (end_date >= today)
+    - BR-017: Party size 1-10
+    - BR-019: First name validation
+    - BR-020: Link detection in description
+    - BR-025: First name edits don't reset approvals or create timeline events
+    - BR-026: Future horizon
+    """
+
+    requester_first_name: str | None = Field(
+        None,
+        min_length=1,
+        max_length=MAX_FIRST_NAME_LENGTH,
+        description="Requester's first name (trimmed, validated per BR-019)",
+    )
+    start_date: date | None = Field(None, description="Start date (inclusive)")
+    end_date: date | None = Field(None, description="End date (inclusive per BR-001)")
+    party_size: int | None = Field(
+        None, ge=1, le=MAX_PARTY_SIZE, description=f"Number of people (1-{MAX_PARTY_SIZE})"
+    )
+    affiliation: AffiliationEnum | None = Field(
+        None, description="Visual affiliation (does not affect approval requirements)"
+    )
+    description: str | None = Field(
+        None,
+        max_length=MAX_DESCRIPTION_LENGTH,
+        description="Optional description (max 500 chars, no links per BR-020)",
+    )
+
+    @field_validator("requester_first_name")
+    @classmethod
+    def validate_first_name(cls, v: str | None) -> str | None:
+        """Validate first name per BR-019 (same as BookingCreate)."""
+        if v is None:
+            return v
+
+        # Trim whitespace
+        v = v.strip()
+
+        if not v:
+            raise ValueError(
+                "Bitte gib einen gültigen Vornamen an (Buchstaben, Leerzeichen, "
+                "Bindestrich, Apostroph; max. 40 Zeichen)."
+            )
+
+        if len(v) > MAX_FIRST_NAME_LENGTH:
+            raise ValueError(
+                "Bitte gib einen gültigen Vornamen an (Buchstaben, Leerzeichen, "
+                "Bindestrich, Apostroph; max. 40 Zeichen)."
+            )
+
+        if not FIRST_NAME_PATTERN.match(v):
+            raise ValueError(
+                "Bitte gib einen gültigen Vornamen an (Buchstaben, Leerzeichen, "
+                "Bindestrich, Apostroph; max. 40 Zeichen)."
+            )
+
+        return v
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, v: str | None) -> str | None:
+        """Validate description per BR-020 (same as BookingCreate)."""
+        if v is None:
+            return v
+
+        if len(v) > MAX_DESCRIPTION_LENGTH:
+            raise ValueError(f"Text ist zu lang (max. {MAX_DESCRIPTION_LENGTH} Zeichen).")
+
+        # Check for links (case-insensitive)
+        for pattern in LINK_PATTERNS:
+            if pattern.search(v):
+                raise ValueError(
+                    "Links sind hier nicht erlaubt. Bitte Text ohne Links verwenden."
+                )
+
+        return v
+
+
 class ApprovalResponse(BaseModel):
     """Approval information in booking response."""
 

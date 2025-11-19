@@ -13,7 +13,7 @@ from app.models.timeline_event import TimelineEvent
 from app.repositories.approval_repository import ApprovalRepository
 from app.repositories.booking_repository import BookingRepository
 from app.repositories.timeline_repository import TimelineRepository
-from app.schemas.booking import BookingCreate
+from app.schemas.booking import BookingCreate, BookingUpdate
 
 BERLIN_TZ = ZoneInfo("Europe/Berlin")
 
@@ -157,3 +157,172 @@ class BookingService:
             Booking with related data, or None if not found
         """
         return await self.booking_repo.get_with_approvals(booking_id)
+
+    async def update_booking(
+        self,
+        booking_id: UUID,
+        booking_data: BookingUpdate,
+        requester_email: str,
+    ) -> Booking:
+        """
+        Update an existing booking with BR-005 approval reset logic.
+
+        Business Rules:
+        - BR-001: Recalculate total_days if dates change
+        - BR-002: Check conflicts excluding current booking
+        - BR-005: CRITICAL - Extend resets approvals, shorten keeps approvals
+        - BR-014: Cannot edit past bookings (end_date < today)
+        - BR-025: First name edits don't create timeline events
+        - BR-026: Future horizon validation
+        - BR-029: Optimistic locking via transaction
+
+        Args:
+            booking_id: UUID of the booking to update
+            booking_data: Validated update data (partial updates allowed)
+            requester_email: Email from verified token
+
+        Returns:
+            Updated booking with related data
+
+        Raises:
+            ValueError: If validation fails or conflicts exist
+        """
+        # Get existing booking
+        booking = await self.booking_repo.get_with_approvals(booking_id)
+        if booking is None:
+            raise ValueError("Der Eintrag konnte leider nicht gefunden werden.")
+
+        # Verify requester owns this booking
+        if booking.requester_email.lower() != requester_email.lower():
+            raise ValueError("Du hast keinen Zugriff auf diesen Eintrag.")
+
+        # BR-014: Cannot edit past bookings (end_date < today)
+        today = datetime.now(BERLIN_TZ).date()
+        if booking.end_date < today:
+            raise ValueError(
+                "Dieser Eintrag liegt in der Vergangenheit und kann nicht mehr geändert werden."
+            )
+
+        # Store original dates for BR-005 logic
+        original_start = booking.start_date
+        original_end = booking.end_date
+
+        # Apply updates (only fields that are not None)
+        updates_applied = {}
+        if booking_data.requester_first_name is not None:
+            booking.requester_first_name = booking_data.requester_first_name
+            updates_applied["first_name"] = True
+        if booking_data.start_date is not None:
+            booking.start_date = booking_data.start_date
+            updates_applied["start_date"] = True
+        if booking_data.end_date is not None:
+            booking.end_date = booking_data.end_date
+            updates_applied["end_date"] = True
+        if booking_data.party_size is not None:
+            booking.party_size = booking_data.party_size
+            updates_applied["party_size"] = True
+        if booking_data.affiliation is not None:
+            booking.affiliation = booking_data.affiliation
+            updates_applied["affiliation"] = True
+        if booking_data.description is not None:
+            booking.description = booking_data.description
+            updates_applied["description"] = True
+
+        # Validate dates if changed
+        if booking_data.start_date is not None or booking_data.end_date is not None:
+            # BR-001: End must be >= start
+            if booking.end_date < booking.start_date:
+                raise ValueError("Ende darf nicht vor dem Start liegen.")
+
+            # BR-014: end_date >= today
+            if booking.end_date < today:
+                raise ValueError(
+                    "Dieser Eintrag liegt in der Vergangenheit und kann nicht mehr geändert werden."
+                )
+
+            # BR-026: Future horizon
+            from dateutil.relativedelta import relativedelta
+
+            future_limit = today + relativedelta(months=18)
+            if booking.start_date > future_limit:
+                raise ValueError(
+                    "Anfragen dürfen nur maximal 18 Monate im Voraus gestellt werden."
+                )
+
+            # BR-001: Recalculate total_days
+            booking.total_days = (booking.end_date - booking.start_date).days + 1
+
+            # BR-002: Check conflicts excluding current booking
+            conflicts = await self.booking_repo.check_conflicts(
+                start_date=booking.start_date,
+                end_date=booking.end_date,
+                exclude_booking_id=booking_id,
+            )
+
+            if conflicts:
+                conflict = conflicts[0]
+                status_map = {
+                    StatusEnum.PENDING: "Ausstehend",
+                    StatusEnum.CONFIRMED: "Bestätigt",
+                }
+                status_german = status_map.get(conflict.status, str(conflict.status.value))
+                raise ValueError(
+                    f"Dieser Zeitraum überschneidet sich mit einer bestehenden Buchung "
+                    f"({conflict.requester_first_name} – {status_german})."
+                )
+
+        # BR-005: Approval reset logic (CRITICAL)
+        # Determine if this is an extend or shorten
+        dates_changed = (
+            booking_data.start_date is not None or booking_data.end_date is not None
+        )
+
+        if dates_changed:
+            # Check if this is an EXTEND (earlier start or later end)
+            is_extend = (
+                booking.start_date < original_start or booking.end_date > original_end
+            )
+
+            if is_extend:
+                # BR-005: EXTEND → Reset all approvals to NoResponse
+                approvals = await self.approval_repo.list_by_booking(booking_id)
+                for approval in approvals:
+                    approval.decision = DecisionEnum.NO_RESPONSE
+                    approval.decided_at = None
+                    approval.comment = None
+
+                # Note: Email notifications would be sent here in Phase 4
+
+            # Create timeline event for date changes (not for first name per BR-025)
+            # Format: "01.–05.08. → 03.–08.08."
+            if "start_date" in updates_applied or "end_date" in updates_applied:
+                old_dates = f"{original_start.strftime('%d.–%d.%m.%Y').replace('.–', '.')[:3]}–{original_end.strftime('%d.%m.%Y')}"
+                new_dates = f"{booking.start_date.strftime('%d.–%d.%m.%Y').replace('.–', '.')[:3]}–{booking.end_date.strftime('%d.%m.%Y')}"
+
+                now = datetime.now(BERLIN_TZ).replace(tzinfo=None)
+                timeline_event = TimelineEvent(
+                    booking_id=booking.id,
+                    when=now,
+                    actor=booking.requester_first_name,
+                    event_type="Edited",
+                    note=f"Dates: {old_dates} → {new_dates}",
+                )
+                await self.timeline_repo.create(timeline_event)
+
+        # BR-025: First name changes do NOT create timeline events
+        # (already handled by checking updates_applied above)
+
+        # Update timestamps
+        now = datetime.now(BERLIN_TZ).replace(tzinfo=None)
+        booking.updated_at = now
+        booking.last_activity_at = now
+
+        # Commit transaction (BR-029: optimistic locking via DB transaction)
+        await self.session.commit()
+
+        # Reload with fresh approvals
+        reloaded_booking = await self.booking_repo.get_with_approvals(booking_id)
+        if reloaded_booking is None:
+            raise RuntimeError("Booking not found after update")
+
+        return reloaded_booking
