@@ -381,7 +381,7 @@ curl -X GET https://api.betzenstein.app/api/v1/bookings \
 1. **Token authentication** (BR-010) - HMAC-signed tokens required
 2. **Rate limiting** (BR-012) - Prevents abuse
 3. **Input validation** (Pydantic) - Prevents injection
-4. **HTTPS only** (ADR-007) - Prevents MITM
+4. **HTTPS only** (ADR-016, ADR-017) - Prevents MITM
 
 **CORS is defense-in-depth**, not primary security.
 
@@ -397,7 +397,8 @@ curl -X GET https://api.betzenstein.app/api/v1/bookings \
 **Related ADRs:**
 - [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI backend
 - [ADR-002: Web Framework](adr-002-frontend-framework.md) - Next.js frontend
-- [ADR-007: Deployment Strategy](adr-007-deployment.md) - Fly.io + Vercel (different domains)
+- [ADR-016: Fly.io Backend Hosting](adr-016-flyio-backend-hosting.md) - Backend domain
+- [ADR-017: Vercel Frontend Hosting](adr-017-vercel-frontend-hosting.md) - Frontend domain
 
 **Business Rules:**
 - BR-010: Token-based authentication (no cookies initially)

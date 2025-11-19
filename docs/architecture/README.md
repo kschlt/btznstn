@@ -91,12 +91,22 @@ ADRs document significant architectural decisions with context, rationale, and c
 
 - [ADR-001: API Framework](adr-001-backend-framework.md) - Why FastAPI
 - [ADR-002: Web Framework](adr-002-frontend-framework.md) - Why Next.js App Router
-- [ADR-003: Database & ORM](adr-003-database-orm.md) - Why PostgreSQL + SQLAlchemy on Fly.io
+- [ADR-003: Database & ORM](adr-003-database-orm.md) - **SUPERSEDED** (split into 012-015)
 - [ADR-004: Email Service](adr-004-email-service.md) - Why Resend
 - [ADR-005: UI Framework](adr-005-ui-framework.md) - Why Shadcn/ui + Tailwind
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md) - Mypy + Pydantic + Zod + TypeScript
-- [ADR-007: Deployment Strategy](adr-007-deployment.md) - Fly.io (backend + DB) + Vercel + GitHub Actions
+- [ADR-007: Deployment Strategy](adr-007-deployment.md) - **SUPERSEDED** (split into 015-018)
 - [ADR-008: Testing Strategy](adr-008-testing-strategy.md) - Pytest + Playwright
+- [ADR-009: Test Patterns](adr-009-test-patterns.md) - Repository pattern + factories
+- [ADR-010: DateTime & Timezone](adr-010-datetime-timezone.md) - Naive storage + Europe/Berlin
+- [ADR-011: CORS Security Policy](adr-011-cors-security-policy.md) - Permissive CORS for trusted SPA
+- [ADR-012: PostgreSQL Database](adr-012-postgresql-database.md) - Why PostgreSQL
+- [ADR-013: SQLAlchemy ORM](adr-013-sqlalchemy-orm.md) - Why SQLAlchemy
+- [ADR-014: Alembic Migrations](adr-014-alembic-migrations.md) - Why Alembic
+- [ADR-015: Fly.io Postgres Hosting](adr-015-flyio-postgres-hosting.md) - Database hosting
+- [ADR-016: Fly.io Backend Hosting](adr-016-flyio-backend-hosting.md) - Backend hosting
+- [ADR-017: Vercel Frontend Hosting](adr-017-vercel-frontend-hosting.md) - Frontend hosting
+- [ADR-018: GitHub Actions CI/CD](adr-018-github-actions-cicd.md) - CI/CD automation
 
 ---
 

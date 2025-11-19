@@ -129,15 +129,20 @@ Step 4: If Resend doesn't work, propose ADR-011 to supersede ADR-004
 **These are NOT optional:**
 - ADR-001: Use FastAPI (not Flask, not Django)
 - ADR-002: Use Next.js App Router (not Pages Router, not Remix)
-- ADR-003: Use PostgreSQL on Fly.io (not MySQL, not MongoDB)
 - ADR-004: Use Resend for email (not SendGrid, not AWS SES)
 - ADR-005: Use Shadcn/ui + Tailwind (not Material UI, not Bootstrap)
 - ADR-006: Type safety with mypy + Pydantic + TypeScript + Zod
-- ADR-007: Deploy to Fly.io (backend) + Vercel (frontend)
 - ADR-008: Test with Pytest + Playwright (not Jest, not Vitest)
 - ADR-009: Test patterns (repository pattern, factories, fixtures)
 - ADR-010: Naive datetime storage with Europe/Berlin timezone (not UTC, not timezone-aware)
 - ADR-011: Permissive CORS policy (allow_credentials, all methods/headers for trusted SPA)
+- ADR-012: Use PostgreSQL (not MySQL, not MongoDB)
+- ADR-013: Use SQLAlchemy (not Django ORM, not Tortoise ORM)
+- ADR-014: Use Alembic for migrations (not raw SQL, not other tools)
+- ADR-015: Database hosted on Fly.io Postgres (not Supabase, not RDS)
+- ADR-016: Backend hosted on Fly.io (not Heroku, not Railway)
+- ADR-017: Frontend hosted on Vercel (not Netlify, not Cloudflare Pages)
+- ADR-018: CI/CD via GitHub Actions (not GitLab CI, not CircleCI)
 
 **If you need to deviate:**
 1. STOP implementation
@@ -306,17 +311,24 @@ Only after user approves, create the ADR file.
 |-----|----------|--------|---------|
 | **ADR-001** | FastAPI + Python 3.11+ | Accepted | Backend framework |
 | **ADR-002** | Next.js 14 App Router | Accepted | Frontend framework |
-| **ADR-003** | PostgreSQL + SQLAlchemy on Fly.io | Accepted | Database & ORM |
+| **ADR-003** | PostgreSQL + SQLAlchemy on Fly.io | Superseded | Database & ORM (split into 012-015) |
 | **ADR-004** | Resend | Accepted | Email service |
 | **ADR-005** | Shadcn/ui + Tailwind CSS | Accepted | UI framework |
 | **ADR-006** | Mypy + Pydantic + TypeScript + Zod | Accepted | Type safety strategy |
-| **ADR-007** | Fly.io + Vercel + GitHub Actions | Accepted | Deployment |
+| **ADR-007** | Fly.io + Vercel + GitHub Actions | Superseded | Deployment (split into 015-018) |
 | **ADR-008** | Pytest + Playwright | Accepted | Testing frameworks |
 | **ADR-009** | Repository pattern + factories | Accepted | Test patterns |
 | **ADR-010** | Naive DateTime Storage (Europe/Berlin) | Accepted | DateTime/timezone strategy |
 | **ADR-011** | CORS Security Policy | Accepted | Permissive CORS for trusted SPA |
+| **ADR-012** | PostgreSQL Database | Accepted | Database choice |
+| **ADR-013** | SQLAlchemy ORM | Accepted | Python ORM |
+| **ADR-014** | Alembic Migrations | Accepted | Database migrations |
+| **ADR-015** | Fly.io Postgres Hosting | Accepted | Database hosting |
+| **ADR-016** | Fly.io Backend Hosting | Accepted | Backend hosting |
+| **ADR-017** | Vercel Frontend Hosting | Accepted | Frontend hosting |
+| **ADR-018** | GitHub Actions CI/CD | Accepted | CI/CD automation |
 
-**All are constraints. Follow them.**
+**All accepted ADRs are constraints. Follow them. Superseded ADRs are historical only.**
 
 ---
 
@@ -344,12 +356,16 @@ Read before implementation:
 |-----------|-----------|-----|------------|
 | API | FastAPI + Python 3.11+ | ADR-001 | MUST use FastAPI |
 | Web | Next.js 14 (App Router) | ADR-002 | MUST use App Router (not Pages) |
-| Database | PostgreSQL 15+ on Fly.io | ADR-003 | MUST use PostgreSQL on Fly.io |
-| ORM | SQLAlchemy 2.0 | ADR-003 | MUST use SQLAlchemy |
+| Database | PostgreSQL 15+ | ADR-012 | MUST use PostgreSQL |
+| DB Hosting | Fly.io Postgres | ADR-015 | MUST use Fly.io Postgres |
+| ORM | SQLAlchemy 2.0 | ADR-013 | MUST use SQLAlchemy |
+| Migrations | Alembic | ADR-014 | MUST use Alembic |
 | Email | Resend | ADR-004 | MUST use Resend |
 | UI | Shadcn/ui + Tailwind | ADR-005 | MUST use Shadcn/ui |
 | Type Safety | Mypy + Pydantic + TypeScript + Zod | ADR-006 | MUST enforce types |
-| Deployment | Fly.io + Vercel + GitHub Actions | ADR-007 | MUST deploy to these platforms |
+| Backend Hosting | Fly.io | ADR-016 | MUST deploy backend to Fly.io |
+| Frontend Hosting | Vercel | ADR-017 | MUST deploy frontend to Vercel |
+| CI/CD | GitHub Actions | ADR-018 | MUST use GitHub Actions |
 | Testing | Pytest + Playwright | ADR-008 | MUST use these frameworks |
 
 ---
@@ -404,7 +420,7 @@ Model Layer (ORM models)
 
 ## Database Architecture
 
-**Fly.io Postgres co-located with backend (ADR-003, ADR-007):**
+**Fly.io Postgres co-located with backend (ADR-015, ADR-016):**
 - Ultra-low latency (.internal network)
 - Always on (no pausing)
 - Same platform as backend
@@ -434,7 +450,7 @@ Browser → Vercel (Next.js) → Fly.io (FastAPI) → Fly.io Postgres
                             Resend (Email)
 ```
 
-**Regions (ADR-007):**
+**Regions (ADR-015, ADR-016, ADR-017):**
 - Fly.io: Frankfurt (backend + DB)
 - Vercel: Global CDN (frontend)
 

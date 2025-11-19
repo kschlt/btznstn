@@ -65,7 +65,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - GiST indexes
   - JSON support (optional)
 - **Documentation:** https://www.postgresql.org/docs/
-- **ADR:** [ADR-003: Database & ORM](adr-003-database-orm.md)
+- **ADR:** [ADR-012: PostgreSQL Database](adr-012-postgresql-database.md)
 
 **SQLAlchemy**
 - **Version:** 2.0+
@@ -77,6 +77,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - Connection pooling
 - **Driver:** asyncpg
 - **Documentation:** https://docs.sqlalchemy.org/en/20/
+- **ADR:** [ADR-013: SQLAlchemy ORM](adr-013-sqlalchemy-orm.md)
 
 **Alembic**
 - **Version:** Latest
@@ -86,6 +87,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - Reversible migrations
   - Version control
 - **Documentation:** https://alembic.sqlalchemy.org/
+- **ADR:** [ADR-014: Alembic Migrations](adr-014-alembic-migrations.md)
 
 ### Type Safety
 
@@ -322,7 +324,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - Private networking (`.internal`)
 - **Free Tier:** 3 shared-cpu VMs, 3GB storage
 - **Documentation:** https://fly.io/docs/
-- **ADR:** [ADR-007: Deployment Strategy](adr-007-deployment.md)
+- **ADR:** [ADR-016: Fly.io Backend Hosting](adr-016-flyio-backend-hosting.md)
 
 ### Database Hosting
 
@@ -338,7 +340,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - Always on (no shutdown/pause)
 - **Free Tier:** 3GB storage (included in Fly.io free tier)
 - **Documentation:** https://fly.io/docs/postgres/
-- **ADR:** [ADR-003: Database & ORM](adr-003-database-orm.md)
+- **ADR:** [ADR-015: Fly.io Postgres Hosting](adr-015-flyio-postgres-hosting.md)
 
 ### Web Hosting
 
@@ -352,7 +354,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - Global CDN (Cloudflare-backed)
 - **Free Tier:** Unlimited deployments, 100GB bandwidth/month
 - **Documentation:** https://vercel.com/docs
-- **ADR:** [ADR-007: Deployment Strategy](adr-007-deployment.md)
+- **ADR:** [ADR-017: Vercel Frontend Hosting](adr-017-vercel-frontend-hosting.md)
 
 ### CI/CD
 
@@ -365,7 +367,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - Deployment (Fly.io + Vercel)
 - **Free Tier:** 2000 minutes/month (private repos)
 - **Documentation:** https://docs.github.com/en/actions
-- **ADR:** [ADR-007: Deployment Strategy](adr-007-deployment.md)
+- **ADR:** [ADR-018: GitHub Actions CI/CD](adr-018-github-actions-cicd.md)
 
 ---
 
@@ -615,12 +617,22 @@ npm install  # Local development
 - [Architecture Overview](README.md)
 - [ADR-001: API Framework](adr-001-backend-framework.md)
 - [ADR-002: Web Framework](adr-002-frontend-framework.md)
-- [ADR-003: Database & ORM](adr-003-database-orm.md)
+- [ADR-003: Database & ORM](adr-003-database-orm.md) - **SUPERSEDED** (split into 012-015)
 - [ADR-004: Email Service](adr-004-email-service.md)
 - [ADR-005: UI Framework](adr-005-ui-framework.md)
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md)
-- [ADR-007: Deployment Strategy](adr-007-deployment.md)
+- [ADR-007: Deployment Strategy](adr-007-deployment.md) - **SUPERSEDED** (split into 015-018)
 - [ADR-008: Testing Strategy](adr-008-testing-strategy.md)
+- [ADR-009: Test Patterns](adr-009-test-patterns.md)
+- [ADR-010: DateTime & Timezone](adr-010-datetime-timezone.md)
+- [ADR-011: CORS Security Policy](adr-011-cors-security-policy.md)
+- [ADR-012: PostgreSQL Database](adr-012-postgresql-database.md)
+- [ADR-013: SQLAlchemy ORM](adr-013-sqlalchemy-orm.md)
+- [ADR-014: Alembic Migrations](adr-014-alembic-migrations.md)
+- [ADR-015: Fly.io Postgres Hosting](adr-015-flyio-postgres-hosting.md)
+- [ADR-016: Fly.io Backend Hosting](adr-016-flyio-backend-hosting.md)
+- [ADR-017: Vercel Frontend Hosting](adr-017-vercel-frontend-hosting.md)
+- [ADR-018: GitHub Actions CI/CD](adr-018-github-actions-cicd.md)
 
 ---
 

@@ -104,10 +104,10 @@ We discovered 17 issues in Phase 1 implementation because tests were written AFT
 **Before ANY implementation, read relevant ADRs:**
 
 1. **Identify applicable ADRs:**
-   - Backend work? → Read ADR-001 (FastAPI), ADR-003 (PostgreSQL/SQLAlchemy), ADR-006 (Type Safety), ADR-008 (Pytest)
+   - Backend work? → Read ADR-001 (FastAPI), ADR-012 (PostgreSQL), ADR-013 (SQLAlchemy), ADR-006 (Type Safety), ADR-008 (Pytest)
    - Frontend work? → Read ADR-002 (Next.js), ADR-005 (Shadcn/Tailwind), ADR-006 (TypeScript/Zod), ADR-008 (Playwright)
    - Email work? → Read ADR-004 (Resend)
-   - Deployment work? → Read ADR-007 (Fly.io/Vercel)
+   - Deployment work? → Read ADR-016 (Fly.io backend), ADR-017 (Vercel frontend), ADR-018 (GitHub Actions)
    - Testing work? → Read ADR-008 (Pytest/Playwright), ADR-009 (Test patterns)
 
 2. **Understand constraints:**
@@ -138,7 +138,7 @@ STOP! Do NOT implement.
 **Common ADR violations to avoid:**
 - ❌ Using Flask instead of FastAPI (violates ADR-001)
 - ❌ Using Next.js Pages Router instead of App Router (violates ADR-002)
-- ❌ Using Prisma instead of SQLAlchemy (violates ADR-003)
+- ❌ Using Prisma instead of SQLAlchemy (violates ADR-013)
 - ❌ Using SendGrid instead of Resend (violates ADR-004)
 - ❌ Using Material UI instead of Shadcn/ui (violates ADR-005)
 - ❌ Skipping type validation (violates ADR-006)

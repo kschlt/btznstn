@@ -226,7 +226,7 @@ scheduler.add_job(
 ## References
 
 **Related ADRs:**
-- ADR-003: Database & ORM (SQLAlchemy patterns)
+- ADR-013: SQLAlchemy ORM (SQLAlchemy patterns)
 - ADR-006: Type Safety (mypy catches timezone issues)
 
 **Business Rules:**
