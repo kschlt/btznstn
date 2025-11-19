@@ -186,13 +186,27 @@ class ApprovalResponse(BaseModel):
     comment: str | None
 
 
+class TimelineEventResponse(BaseModel):
+    """Timeline event information in booking response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    when: datetime
+    actor: str  # First name of person who performed action
+    event_type: str  # "Created", "SelfApproved", "Approved", "Denied", etc.
+    note: str | None
+
+
 class BookingResponse(BaseModel):
     """
-    Schema for booking responses (POST /api/v1/bookings, GET /api/v1/bookings/{id}).
+    Schema for authenticated booking responses (GET /api/v1/bookings/{id} with token).
+
+    Full details including approvals and timeline for requester/approver access.
 
     Privacy (BR-011):
-    - Excludes requester_email (only visible with valid token)
-    - Includes public fields for calendar display
+    - Excludes requester_email (not exposed in any response)
+    - Includes all other fields + approvals + timeline_events
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -209,9 +223,11 @@ class BookingResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     last_activity_at: datetime
+    is_past: bool  # Calculated per BR-014: end_date < today (Europe/Berlin)
 
     # Related data (included in authenticated responses)
-    approvals: list[ApprovalResponse] | None = None
+    approvals: list[ApprovalResponse]
+    timeline_events: list[TimelineEventResponse]
 
 
 class PublicBookingResponse(BaseModel):

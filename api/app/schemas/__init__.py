@@ -5,6 +5,7 @@ from app.schemas.booking import (
     BookingCreate,
     BookingResponse,
     PublicBookingResponse,
+    TimelineEventResponse,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "BookingResponse",
     "PublicBookingResponse",
     "ApprovalResponse",
+    "TimelineEventResponse",
 ]

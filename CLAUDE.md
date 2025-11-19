@@ -206,6 +206,12 @@ This project uses a **layered documentation approach**:
 
 2. **Write tests first** (BDD approach):
    - Backend: `pytest` tests
+     - ⚠️ **IMPORTANT:** Read [`api/tests/CLAUDE.md`](api/tests/CLAUDE.md) BEFORE writing any test
+     - Always check `tests/utils.py` for existing utilities
+     - Always check `tests/fixtures/factories.py` for factory functions
+     - Use `make_booking()`, `make_approval()` (never manual `Booking(...)`)
+     - Use `get_today()` for dates (never `datetime.now()`)
+     - Follow DRY principle (Don't Repeat Yourself)
    - Frontend: `playwright` E2E tests
    - Tests should fail initially
 

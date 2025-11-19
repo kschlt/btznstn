@@ -21,8 +21,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     secret_key: str = "your-secret-key-here-generate-with-openssl-rand-hex-32"  # noqa: S105
 
-    # CORS
-    allowed_origins: list[str] = ["http://localhost:3000"]
+    # CORS (comma-separated string)
+    allowed_origins: str = "http://localhost:3000"
+
+    def get_allowed_origins(self) -> list[str]:
+        """Parse comma-separated CORS origins."""
+        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
 
     # Rate limiting (BR-012)
     max_bookings_per_day: int = 10
