@@ -137,6 +137,7 @@ Step 4: If Resend doesn't work, propose ADR-011 to supersede ADR-004
 - ADR-008: Test with Pytest + Playwright (not Jest, not Vitest)
 - ADR-009: Test patterns (repository pattern, factories, fixtures)
 - ADR-010: Naive datetime storage with Europe/Berlin timezone (not UTC, not timezone-aware)
+- ADR-011: Permissive CORS policy (allow_credentials, all methods/headers for trusted SPA)
 
 **If you need to deviate:**
 1. STOP implementation
@@ -194,7 +195,7 @@ Ask yourself:
 ### Step 2: Use ADR Template
 
 **File naming:** `adr-{number}-{title}.md`
-- Number: Next available (currently ADR-011)
+- Number: Next available (currently ADR-012)
 - Title: Kebab-case, descriptive
 
 **Template:**
@@ -288,7 +289,7 @@ Current situation: {Context}
 Proposed solution: {Your recommendation}
 Rationale: {Why}
 
-Should I create ADR-011: {Title}?
+Should I create ADR-012: {Title}?
 ```
 
 ### Step 4: Create ADR After Approval
@@ -313,6 +314,7 @@ Only after user approves, create the ADR file.
 | **ADR-008** | Pytest + Playwright | Accepted | Testing frameworks |
 | **ADR-009** | Repository pattern + factories | Accepted | Test patterns |
 | **ADR-010** | Naive DateTime Storage (Europe/Berlin) | Accepted | DateTime/timezone strategy |
+| **ADR-011** | CORS Security Policy | Accepted | Permissive CORS for trusted SPA |
 
 **All are constraints. Follow them.**
 
