@@ -13,7 +13,7 @@ from app.models.timeline_event import TimelineEvent
 from app.repositories.approval_repository import ApprovalRepository
 from app.repositories.booking_repository import BookingRepository
 from app.repositories.timeline_repository import TimelineRepository
-from app.schemas.booking import BookingCreate, BookingUpdate
+from app.schemas.booking import BookingCancel, BookingCreate, BookingUpdate
 
 BERLIN_TZ = ZoneInfo("Europe/Berlin")
 
@@ -326,3 +326,89 @@ class BookingService:
             raise RuntimeError("Booking not found after update")
 
         return reloaded_booking
+
+    async def cancel_booking(
+        self,
+        booking_id: UUID,
+        cancel_data: BookingCancel,
+        requester_email: str,
+    ) -> str:
+        """
+        Cancel an existing booking.
+
+        Business Rules:
+        - BR-006: Pending bookings can be canceled without comment
+        - BR-007: Confirmed bookings require comment
+        - BR-014: Cannot cancel past bookings (end_date < today)
+        - State validation: Only Pending/Confirmed can be canceled
+
+        Args:
+            booking_id: UUID of the booking to cancel
+            cancel_data: Validated cancel data (optional comment)
+            requester_email: Email from verified token
+
+        Returns:
+            Success message in German
+
+        Raises:
+            ValueError: If validation fails or state invalid
+        """
+        # Get existing booking
+        booking = await self.booking_repo.get_with_approvals(booking_id)
+        if booking is None:
+            raise ValueError("Der Eintrag konnte leider nicht gefunden werden.")
+
+        # Verify requester owns this booking
+        if booking.requester_email.lower() != requester_email.lower():
+            raise ValueError("Du hast keinen Zugriff auf diesen Eintrag.")
+
+        # BR-014: Cannot cancel past bookings (end_date < today)
+        today = datetime.now(BERLIN_TZ).date()
+        if booking.end_date < today:
+            raise ValueError(
+                "Dieser Eintrag liegt in der Vergangenheit und kann nicht mehr geändert werden."
+            )
+
+        # State validation: Can only cancel Pending or Confirmed bookings
+        if booking.status == StatusEnum.DENIED:
+            raise ValueError("Eine abgelehnte Anfrage kann nicht storniert werden.")
+
+        if booking.status == StatusEnum.CANCELED:
+            # Idempotent: Already canceled, return success message
+            return "Anfrage storniert. Benachrichtigt: Ingeborg, Cornelia und Angelika."
+
+        # BR-007: Confirmed bookings require comment
+        if booking.status == StatusEnum.CONFIRMED:
+            if not cancel_data.comment:
+                raise ValueError("Bitte gib einen kurzen Grund an.")
+
+        # Update status to Canceled
+        booking.status = StatusEnum.CANCELED
+
+        # Create timeline event
+        now = datetime.now(BERLIN_TZ).replace(tzinfo=None)
+        event_note = None
+        if cancel_data.comment:
+            event_note = f"Comment: {cancel_data.comment}"
+
+        timeline_event = TimelineEvent(
+            booking_id=booking.id,
+            when=now,
+            actor=booking.requester_first_name,
+            event_type="Canceled",
+            note=event_note,
+        )
+        await self.timeline_repo.create(timeline_event)
+
+        # Update timestamps
+        booking.updated_at = now
+        booking.last_activity_at = now
+
+        # Commit transaction
+        await self.session.commit()
+
+        # Note: Email notifications would be sent here in Phase 4
+        # Notified: requester + 3 approvers (4 emails total)
+
+        # Return German success message
+        return "Anfrage storniert. Benachrichtigt: Ingeborg, Cornelia und Angelika."

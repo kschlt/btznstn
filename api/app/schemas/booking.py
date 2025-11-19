@@ -260,6 +260,54 @@ class BookingUpdate(BaseModel):
         return v
 
 
+class BookingCancel(BaseModel):
+    """
+    Schema for canceling a booking (DELETE /api/v1/bookings/{id}).
+
+    Validates:
+    - BR-007: Comment required for Confirmed bookings
+    - BR-020: Link detection in comment
+    """
+
+    comment: str | None = Field(
+        None,
+        min_length=1,
+        max_length=500,
+        description="Optional comment for Pending, required for Confirmed (BR-007)",
+    )
+
+    @field_validator("comment")
+    @classmethod
+    def validate_comment(cls, v: str | None) -> str | None:
+        """Validate comment per BR-020 (no links)."""
+        if v is None:
+            return v
+
+        # Trim whitespace
+        v = v.strip()
+
+        if not v:
+            return None  # Treat empty as None
+
+        if len(v) > 500:
+            raise ValueError("Text ist zu lang (max. 500 Zeichen).")
+
+        # Check for links (case-insensitive) per BR-020
+        for pattern in LINK_PATTERNS:
+            if pattern.search(v):
+                raise ValueError(
+                    "Links sind hier nicht erlaubt. Bitte Text ohne Links verwenden."
+                )
+
+        return v
+
+
+class CancelResponse(BaseModel):
+    """Response for successful booking cancellation."""
+
+    message: str = Field(..., description="Success message in German")
+
+
 class ApprovalResponse(BaseModel):
     """Approval information in booking response."""
 

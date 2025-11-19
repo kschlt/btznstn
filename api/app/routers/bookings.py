@@ -9,7 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.tokens import verify_token
-from app.schemas.booking import BookingCreate, BookingResponse, BookingUpdate, PublicBookingResponse
+from app.schemas.booking import (
+    BookingCancel,
+    BookingCreate,
+    BookingResponse,
+    BookingUpdate,
+    CancelResponse,
+    PublicBookingResponse,
+)
 from app.services.booking_service import BookingService
 
 router = APIRouter(prefix="/api/v1/bookings", tags=["bookings"])
@@ -318,6 +325,103 @@ async def update_booking(
         if "überschneidet" in error_msg:
             status_code = status.HTTP_409_CONFLICT
         elif "zugriff" in error_msg.lower():
+            status_code = status.HTTP_403_FORBIDDEN
+        elif "nicht gefunden" in error_msg:
+            status_code = status.HTTP_404_NOT_FOUND
+        else:
+            status_code = status.HTTP_400_BAD_REQUEST
+
+        raise HTTPException(status_code=status_code, detail=error_msg) from e
+    except Exception as e:
+        # Unexpected errors
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ein unerwarteter Fehler ist aufgetreten.",
+        ) from e
+
+
+@router.delete(
+    "/{booking_id}",
+    response_model=CancelResponse,
+    summary="Cancel a booking",
+    description="""
+    Cancel an existing booking (requester only).
+
+    Business Rules:
+    - BR-006: Pending bookings can be canceled without comment
+    - BR-007: Confirmed bookings require comment
+    - BR-010: Token validation (requester only)
+    - BR-014: Cannot cancel past bookings (end_date < today)
+    - BR-020: No links in comment
+    - State validation: Only Pending/Confirmed can be canceled
+
+    Privacy:
+    - Requires valid requester token (not approver token)
+    - Returns German success message
+
+    Notifications:
+    - 4 emails sent: requester + 3 approvers (Phase 4)
+    """,
+)
+async def cancel_booking(
+    booking_id: UUID,
+    token: str = Query(..., description="Requester access token"),
+    cancel_data: BookingCancel = BookingCancel(),
+    db: AsyncSession = Depends(get_db),
+) -> CancelResponse:
+    """
+    Cancel a booking.
+
+    Returns:
+        200: Booking canceled successfully
+        400: Validation error, past booking, or invalid state
+        401: Invalid token
+        403: Token not for requester or wrong booking
+        404: Booking not found
+    """
+    service = BookingService(db)
+
+    # Verify token
+    payload = verify_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültiger Zugangslink.",
+        )
+
+    # Check token is for requester role (not approver)
+    token_role = payload.get("role")
+    if token_role != "requester":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Du hast keinen Zugriff auf diesen Eintrag.",
+        )
+
+    # Check token belongs to this booking
+    token_booking_id = payload.get("booking_id")
+    if token_booking_id != str(booking_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Du hast keinen Zugriff auf diesen Eintrag.",
+        )
+
+    # Extract email from token
+    requester_email = payload.get("email")
+    if not requester_email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültiger Zugangslink.",
+        )
+
+    try:
+        message = await service.cancel_booking(booking_id, cancel_data, requester_email)
+        return CancelResponse(message=message)
+    except ValueError as e:
+        # Business logic errors (validation, state, past bookings)
+        error_msg = str(e)
+
+        # Determine appropriate status code
+        if "zugriff" in error_msg.lower():
             status_code = status.HTTP_403_FORBIDDEN
         elif "nicht gefunden" in error_msg:
             status_code = status.HTTP_404_NOT_FOUND
