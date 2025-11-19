@@ -1,9 +1,11 @@
 # Project Status
 
 **Last Updated:** 2025-11-19
-**Current Increment:** Increment 1 (Backend Core)
-**Current Phase:** Phase 2 (Booking API) - ✅ **COMPLETE**
-**Next Phase:** Phase 3 (Approval Flow)
+**Current Increment:** Increment 2 (Backend COMPLETE - Phases 3-4)
+**Current Phase:** Phase 3 (Approval Flow) - ⏸️ **PENDING**
+**Next Phase:** Phase 4 (Email Integration)
+
+**🎯 Backend-First Strategy:** Complete ALL backend (Phases 3-4) before ANY frontend (Phases 5-7)
 
 ---
 
@@ -68,7 +70,7 @@
 
 ---
 
-## 📅 Increment Roadmap
+## 📅 Increment Roadmap (Backend-First)
 
 ### Completed
 
@@ -76,38 +78,59 @@
 - ✅ **Increment 1: Backend Core** (Phases 0-2) - ✅ **COMPLETE** (2025-11-19)
   - 4 user stories implemented, 146 tests passing
   - All backend booking API endpoints operational
+  - **Milestone:** Basic CRUD API complete
 
-### Next Up
+### Next Up (Immediate)
 
-### Pending
+- ⏸️ **Increment 2: Backend COMPLETE** (Phases 3-4) ← **START NOW**
+  - Phase 3: Approval Flow (3 user stories, ~36-43 tests)
+    - Approve endpoint (POST /api/v1/bookings/{id}/approve)
+    - Deny endpoint (POST /api/v1/bookings/{id}/deny)
+    - Reopen endpoint (POST /api/v1/bookings/{id}/reopen)
+    - BR-024 concurrency (SELECT FOR UPDATE)
+  - Phase 4: Email Integration (4 user stories, ~47-60 tests)
+    - Resend integration
+    - 11 German email templates
+    - Email retry logic (BR-022)
+    - Weekly digest job (BR-009)
+  - **Dependency:** Increment 1 complete ✅
+  - **Status:** Ready to start (no blockers)
+  - **Milestone:** Backend 100% complete (all API endpoints done)
 
-- ⏸️ **Increment 2: Backend Business Logic** (Phases 3-4)
-  - Phase 3: Approval Flow (3 user stories, ~49 tests)
-  - Phase 4: Email Integration (4 user stories, ~75 tests)
-  - Dependency: Increment 1 complete
+### Pending (After Backend Complete)
 
-- 🚫 **Increment 3: Frontend Core** (Phases 5-6)
-  - Phase 5: Web Calendar (3 user stories, ~52 tests)
-  - Phase 6: Web Booking (3 user stories, ~44 tests)
-  - Dependency: Increment 1 complete + Playwright configured
-  - **BLOCKER:** Playwright not configured
+- 🚫 **Increment 3: Frontend COMPLETE** (Phases 5-6-7)
+  - Phase 5: Web Calendar (3 user stories, ~52-61 E2E tests)
+  - Phase 6: Web Booking (3 user stories, ~42-46 E2E tests)
+  - Phase 7: Approver Interface (3 user stories, ~37-42 E2E tests)
+  - **Dependencies:**
+    1. Increment 2 complete (approval backend needed for Phase 7)
+    2. Playwright configured
+  - **Blockers:**
+    - Waiting for Increment 2 to finish
+    - Playwright not configured
+  - **Milestone:** Frontend 100% complete (all pages done)
 
-- 🚫 **Increment 4: Frontend Approver** (Phase 7)
-  - Phase 7: Approver Interface (3 user stories, ~40 tests)
-  - Dependency: Increments 2 and 3 complete
-
-- 🚫 **Increment 5: Production Ready** (Phase 8)
+- 🚫 **Increment 4: Production Ready** (Phase 8)
   - Phase 8: Polish & Production (3 user stories, ~140 tests)
-  - Dependency: All phases 0-7 complete
+    - Performance optimization (Lighthouse ≥90)
+    - Accessibility compliance (WCAG AA)
+    - Production deployment (Fly.io + Vercel)
+  - **Dependency:** Increments 1-3 complete (all features implemented)
+  - **Milestone:** Production launch 🚀
 
 ---
 
 ## 🚧 Critical Blockers
 
-### 🔴 High Priority
+### 🟢 No High Priority Blockers
+
+**Backend-First Strategy:** Focus on Phases 3-4 (backend) before ANY frontend work.
+
+### 🟠 Medium Priority (Deferred Until Backend Complete)
 
 1. **Playwright Not Configured**
-   - **Impact:** Blocks all frontend work (Phases 5-7)
+   - **Impact:** Blocks all frontend work (Phases 5-7) in Increment 3
    - **Location:** `/web/` directory
    - **Missing:** `playwright.config.ts`, `@playwright/test` dependency
    - **Action Required:**
@@ -118,22 +141,18 @@
      # Create playwright.config.ts with iPhone 8 viewport (375×667px)
      ```
    - **Estimated Time:** 1 hour
-
-2. **Phase 2 Incomplete**
-   - **Impact:** Blocks Increment 2 (Approval Flow)
-   - **Missing:** US-2.3, US-2.4, US-2.5 (3 user stories)
-   - **Action Required:** Implement edit, cancel, calendar endpoints
-   - **Estimated Time:** 1-2 days
+   - **When:** After Increment 2 complete (before starting Increment 3)
+   - **Rationale:** No frontend work happening until backend is 100% done
 
 ### 🟠 Medium Priority
 
-3. **Documentation Organization**
+2. **Documentation Organization**
    - **Impact:** 8 phase analysis files in wrong location (root instead of `/docs/implementation/`)
    - **Files:** PHASE_6_*.md, PHASE-7-*.md, PHASE-8-*.md (4,667 lines total)
    - **Action Required:** Move to `/docs/implementation/` with proper naming
    - **Estimated Time:** 15 minutes
 
-4. **Missing Deployment CLAUDE.md**
+3. **Missing Deployment CLAUDE.md**
    - **Impact:** Phase 8 implementation guidance incomplete
    - **Location:** `/docs/deployment/CLAUDE.md` missing
    - **Action Required:** Create guidance file for Fly.io/Resend setup
@@ -141,7 +160,7 @@
 
 ### 🟢 Low Priority
 
-5. **Test Coverage Unknown**
+4. **Test Coverage Unknown**
    - **Impact:** Don't know if hitting 80% coverage target
    - **Action Required:** Run `pytest --cov=app --cov-report=html`
    - **Estimated Time:** 5 minutes
@@ -172,35 +191,41 @@
 - **Implementation Phases:** 9 phase docs + 8 supplementary analysis files
 
 **Project Management:**
-- **Increments:** 5 planned (1 in progress)
+- **Increments:** 4 planned (1 complete, 1 in progress)
 - **User Stories:** ~25 total across all phases
 - **Estimated Tests:** ~400 total (backend + frontend)
+- **Backend-First:** Phases 3-4 before Phases 5-7
 
 ---
 
 ## 🎯 Next Milestone
 
-### Milestone 1: Backend Complete
+### Milestone 1: Backend Complete (Backend-First Strategy)
 
-**Target:** Phases 0-4 done (Increments 1-2)
+**Target:** Phases 0-4 done (Increments 1-2) = **Backend 100% Complete**
+
+**Current Status:** Phase 2 ✅ complete (Increment 1 done)
 
 **Remaining Work:**
-- Complete Phase 2 (3 user stories)
-- Complete Phase 3 (3 user stories)
-- Complete Phase 4 (4 user stories)
+- Complete Phase 3 (3 user stories, ~36-43 tests) - Approval Flow
+- Complete Phase 4 (4 user stories, ~47-60 tests) - Email Integration
 
-**Estimated Effort:** 5-8 days (assuming full-time work)
+**Estimated Effort:** 5-6 days (assuming full-time work with AI assistance)
 
 **Completion Criteria:**
-- All backend endpoints implemented
-- All backend tests passing (≥80% coverage)
-- Email integration working (Resend)
-- German email templates verified
+- ✅ All backend endpoints implemented (booking + approval API)
+- ✅ All backend tests passing (≥80% coverage)
+- ✅ Email integration working (Resend)
+- ✅ German email templates verified (11 templates)
+- ✅ Background jobs scheduled (weekly digest)
+- ✅ BR-024 concurrency handled (SELECT FOR UPDATE)
 
 **After Milestone 1:**
-- Can start frontend work (requires Playwright configuration)
+- **Backend is 100% complete** (all API endpoints done)
+- Can start frontend work (after Playwright configuration)
 - Backend can be deployed independently
-- Frontend can consume backend APIs
+- Frontend can consume finalized backend API contract
+- **Key benefit:** No context switching between backend/frontend during development
 
 ---
 
@@ -245,36 +270,46 @@
 
 ---
 
-## 🚀 To Production Checklist
+## 🚀 To Production Checklist (Backend-First)
 
 **What needs to be done before production launch:**
 
-### Backend
-- [ ] All phases 0-4 complete (Increments 1-2)
+### Backend (Increment 2) - **CURRENT FOCUS**
+- [ ] All phases 0-4 complete (Increments 1-2) - **Backend 100% done**
 - [ ] All tests passing (≥80% coverage)
 - [ ] Type checking passes (mypy strict)
 - [ ] Linting passes (ruff)
 - [ ] Database migrations tested
 - [ ] Email integration tested (Resend)
+- [ ] Background jobs scheduled (weekly digest)
 
-### Frontend
-- [ ] All phases 5-7 complete (Increments 3-4)
-- [ ] All Playwright tests passing
+**Estimated:** 5-6 days
+
+### Frontend (Increment 3) - **AFTER BACKEND COMPLETE**
+- [ ] All phases 5-7 complete (Increment 3) - **Frontend 100% done**
+- [ ] Playwright configured
+- [ ] All Playwright tests passing (~131-149 tests)
 - [ ] Type checking passes (tsc strict)
 - [ ] Linting passes (eslint)
 - [ ] Mobile tested (375px viewport)
-- [ ] Accessibility tested (WCAG AA)
+- [ ] Accessibility basics implemented
 
-### Phase 8: Production
+**Estimated:** 10-11 days
+
+### Phase 8: Production (Increment 4) - **FINAL POLISH**
 - [ ] Performance optimization (Lighthouse ≥90)
-- [ ] Accessibility audit (axe-core 0 violations)
+- [ ] Accessibility audit (WCAG AA, axe-core 0 violations)
 - [ ] Deployment tested (Fly.io + Vercel)
 - [ ] Rate limiting enforced (BR-012)
 - [ ] Email retries working (BR-022)
-- [ ] Background jobs scheduled (BR-028, BR-013)
+- [ ] Background jobs verified (BR-028, BR-013, BR-009)
 - [ ] Monitoring configured
 
-**Estimated Total Time to Production:** 10-16 days (with AI assistance) or 15-22 days (single developer)
+**Estimated:** 3-4 days
+
+**Total Time to Production:** ~18-21 days (with AI assistance) or ~25-30 days (single developer)
+
+**Backend-First Benefit:** Clear progress tracking - Backend done = 50% complete
 
 ---
 

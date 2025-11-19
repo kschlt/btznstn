@@ -1,7 +1,8 @@
 # Project Backlog
 
 **Last Updated:** 2025-11-19
-**Current Focus:** ✅ Increment 1 COMPLETE - Ready for Increment 2
+**Current Focus:** Increment 2 (Backend COMPLETE) - Phases 3-4
+**Strategy:** 🎯 **Backend-First** - Complete ALL backend (Phases 3-4) before ANY frontend (Phases 5-7)
 
 ---
 
@@ -28,55 +29,91 @@
 
 ---
 
-## 🔥 High Priority (Next Up)
+## 🔥 High Priority (Immediate Focus)
 
-### Increment 2: Backend Business Logic (Phases 3-4)
+### 🎯 Increment 2: Backend COMPLETE (Phases 3-4) ← **START NOW**
 
-**Status:** Ready to start (Increment 1 complete)
+**Goal:** Complete ALL backend functionality before ANY frontend work
 
-**Phase 3: Approval Flow** (3 user stories, ~49 tests)
-- US-3.1: Approve Booking (POST /api/v1/bookings/{id}/approve)
-- US-3.2: Deny Booking (POST /api/v1/bookings/{id}/deny)
-- US-3.3: Reopen Denied Booking (POST /api/v1/bookings/{id}/reopen)
+**Status:** ✅ Ready to start (Increment 1 complete, no blockers)
 
-**Phase 4: Email Integration** (4 user stories, ~75 tests)
-- US-4.1: New booking notification emails
-- US-4.2: Approval/denial notification emails
-- US-4.3: Edit/cancel notification emails
-- US-4.4: Email retry and error handling
+**Estimated Effort:** 5-6 days (with AI assistance)
 
 ---
 
-## 🚧 Technical Blockers (For Future Increments)
+#### Phase 3: Approval Flow (3 user stories, ~36-43 tests)
 
-#### Configure Playwright (Frontend Work)
-- [ ] **Navigate to frontend:**
-  ```bash
-  cd /home/user/btznstn/web
-  ```
-- [ ] **Install Playwright:**
+**Deliverables:**
+- US-3.1: Approve Booking (POST /api/v1/bookings/{id}/approve)
+  - BR-024: SELECT FOR UPDATE for concurrency
+  - BR-015: Self-approval detection
+  - BR-010: Idempotency
+- US-3.2: Deny Booking (POST /api/v1/bookings/{id}/deny)
+  - BR-004: Denial handling (comment required, frees dates immediately)
+  - BR-020: Link detection in comment
+  - BR-024: SELECT FOR UPDATE
+- US-3.3: Reopen Denied Booking (POST /api/v1/bookings/{id}/reopen)
+  - BR-018: Reopen guard (no conflicts allowed)
+  - BR-005: Reset approvals to NoResponse
+
+**Estimated:** 2-3 days
+
+---
+
+#### Phase 4: Email Integration (4 user stories, ~47-60 tests)
+
+**Deliverables:**
+- US-4.1: Resend Integration (5-8 tests)
+  - Set up Resend account and API key
+  - Test email sending
+- US-4.2: Email Templates (20-25 tests)
+  - 11 German email templates (exact copy from spec)
+  - Dynamic placeholders ({{Vorname}}, {{StartDatum}}, etc.)
+  - Informal "du" tone throughout
+- US-4.3: Email Retry Logic (10-12 tests)
+  - BR-022: 3 attempts, exponential backoff (2s, 4s, 8s)
+  - Log failures with correlation ID
+- US-4.4: Weekly Digest (12-15 tests)
+  - BR-009: Sunday 09:00 Europe/Berlin
+  - Old NoResponse items for each approver
+
+**Estimated:** 2-3 days
+
+---
+
+**After Increment 2:** Backend is 100% complete, ready for frontend work
+
+---
+
+## 🚧 Technical Blockers (Deferred Until Backend Complete)
+
+### Configure Playwright (After Increment 2)
+
+**Status:** Deferred until backend 100% complete
+
+**Rationale:** Backend-first strategy - no frontend work until Phases 3-4 done
+
+**When to do this:** After Increment 2 complete, before starting Increment 3
+
+**Estimated Time:** 1 hour
+
+**Steps:**
+- [ ] Navigate to frontend: `cd /home/user/btznstn/web`
+- [ ] Install Playwright:
   ```bash
   npm install -D @playwright/test
   npx playwright install
   ```
-- [ ] **Create `playwright.config.ts`:**
+- [ ] Create `playwright.config.ts`:
   - [ ] Configure iPhone 8 viewport (375×667px)
   - [ ] Set up test directories (`/tests/e2e/`)
   - [ ] Configure browsers (Chromium, Firefox, WebKit)
-  - [ ] Set up screenshots on failure
-  - [ ] Configure retries (2 retries on failure)
-- [ ] **Create example test:**
-  - [ ] `/web/tests/e2e/example.spec.ts`
-  - [ ] Basic navigation test
-  - [ ] Verify viewport works
-- [ ] **Run test:**
-  ```bash
-  npx playwright test
-  ```
-- [ ] **Verify:** Test runs and passes
+  - [ ] Set up screenshots on failure, 2 retries
+- [ ] Create example test: `/web/tests/e2e/example.spec.ts`
+- [ ] Run test: `npx playwright test`
+- [ ] Verify test passes
 
-**Estimated Time:** 1 hour
-**Blocks:** Increments 3-4 (all frontend work)
+**Blocks:** Increment 3 (all frontend work - Phases 5-6-7)
 
 ---
 
@@ -224,31 +261,79 @@
 
 ---
 
-## 🟢 Low Priority (Future)
+## 🟡 Medium Priority (After Backend Complete)
 
-### Phase 5: Web Calendar (After Playwright)
+### Increment 3: Frontend COMPLETE (Phases 5-6-7)
+
+**Status:** Blocked - waiting for Increment 2 to finish
+
+**Dependencies:**
+1. Increment 2 complete (backend 100% done)
+2. Playwright configured (1 hour setup)
+
+**Estimated Effort:** 10-11 days
+
+---
+
+#### Phase 5: Web Calendar (3 user stories, ~52-61 E2E tests)
 - [ ] Implement month view component
 - [ ] Implement year view component
 - [ ] Implement booking detail modal
-- [ ] Write 52 E2E tests
+- [ ] Write Playwright E2E tests
 
-### Phase 6: Web Booking (After Phase 5)
+**Estimated:** 3-4 days
+
+---
+
+#### Phase 6: Web Booking (3 user stories, ~42-46 E2E tests)
+- [ ] Implement date picker component
 - [ ] Implement create booking form
-- [ ] Implement date picker
-- [ ] Implement edit booking form
-- [ ] Write 44 E2E tests
+- [ ] Implement edit booking form (BR-005 approval reset detection)
+- [ ] Write Playwright E2E tests
 
-### Phase 7: Approver Interface (After Phases 3-6)
-- [ ] Implement outstanding tab
-- [ ] Implement history tab
-- [ ] Implement approve/deny actions
-- [ ] Write 40 E2E tests
+**Estimated:** 3-4 days
 
-### Phase 8: Polish & Production (After All Phases)
-- [ ] Performance optimization
-- [ ] Accessibility audit
-- [ ] Production deployment
-- [ ] Write 140 tests
+---
+
+#### Phase 7: Approver Interface (3 user stories, ~37-42 E2E tests)
+- [ ] Implement approver overview (Outstanding + History tabs)
+- [ ] Implement approve action (one-click)
+- [ ] Implement deny action with comment (BR-020 link validation)
+- [ ] Write Playwright E2E tests
+
+**Estimated:** 2-3 days
+
+---
+
+**After Increment 3:** Frontend is 100% complete (all pages done)
+
+---
+
+## 🟢 Low Priority (Final Polish)
+
+### Increment 4: Production Ready (Phase 8)
+
+**Status:** Blocked - waiting for Increments 1-3 to finish
+
+**Dependencies:** All features implemented (Phases 0-7 complete)
+
+**Estimated Effort:** 3-4 days
+
+---
+
+#### Phase 8: Polish & Production (3 user stories, ~140 tests)
+- [ ] Performance optimization (Lighthouse ≥90)
+- [ ] Accessibility audit (WCAG AA, axe-core 0 violations)
+- [ ] Production deployment (Fly.io + Vercel)
+- [ ] Rate limiting (BR-012)
+- [ ] Background jobs (BR-028, BR-013, BR-009)
+- [ ] Monitoring and error logging
+
+**Estimated:** 3-4 days
+
+---
+
+**After Increment 4:** Production launch 🚀
 
 ---
 
@@ -303,38 +388,56 @@
 
 ---
 
-## 📊 Quick Metrics
+## 📊 Quick Metrics (Backend-First)
 
 **Completed:**
-- ✅ Phases 0, 1: 100%
-- 🔄 Phase 2: 70% (3/5 user stories)
+- ✅ Phases 0, 1, 2: 100% (Increment 1 complete)
+- ✅ Increment 1: Backend Core (4/4 user stories, 146 tests)
 
 **In Progress:**
-- US-2.3, US-2.4, US-2.5 (Phase 2)
+- Increment 2: Backend COMPLETE (Phases 3-4)
+  - Phase 3: 0/3 user stories
+  - Phase 4: 0/4 user stories
 
 **Next Up:**
-- Phase 3: Approval Flow
-- Phase 4: Email Integration
+- US-3.1: Approve Booking
+- US-3.2: Deny Booking
+- US-3.3: Reopen Denied Booking
 
 **Blockers:**
-- 🚫 Playwright not configured (blocks Phases 5-7)
+- 🟢 None! Ready to start Increment 2
+- 🟠 Playwright deferred until backend complete
+
+**Backend-First Progress:**
+- Backend: 37.5% complete (Phases 0-2 of 0-4)
+- Frontend: 0% (deferred until backend done)
 
 ---
 
-## 🚀 This Week's Goal
+## 🚀 Current Focus (Week 1-2)
 
-**Complete Increment 1:**
-1. ✅ Finish US-2.3 (Edit Booking)
-2. ✅ Finish US-2.4 (Cancel Booking)
-3. ✅ Finish US-2.5 (Calendar View)
-4. ✅ All Phase 2 tests passing
-5. ✅ Playwright configured (unblock frontend)
-6. ✅ Documentation organized
+**Goal: Complete Increment 2 (Backend 100% Complete)**
+
+**Week 1: Phase 3 (Approval Flow)**
+1. Implement US-3.1 (Approve endpoint with BR-024 concurrency)
+2. Implement US-3.2 (Deny endpoint with BR-004/BR-020)
+3. Implement US-3.3 (Reopen endpoint with BR-018)
+4. All ~36-43 tests passing
+5. SELECT FOR UPDATE working (concurrency safety)
+
+**Week 2: Phase 4 (Email Integration)**
+6. Set up Resend integration
+7. Implement 11 German email templates
+8. Implement email retry logic (BR-022)
+9. Schedule weekly digest job (BR-009)
+10. All ~47-60 tests passing
 
 **Success Criteria:**
-- All backend CRUD endpoints working
-- All tests passing (≥80% coverage)
-- Frontend can start immediately next week
+- **Backend is 100% complete** (all API endpoints done)
+- All backend tests passing (≥80% coverage)
+- Email integration working (Resend)
+- German email templates verified
+- **Milestone 1 achieved:** Backend fully functional
 
 ---
 
