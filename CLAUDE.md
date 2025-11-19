@@ -8,19 +8,23 @@ This is the **Betzenstein Booking & Approval Application** - a complete, impleme
 
 ## Quick Start
 
-**If this is your first time in this repository:**
+**⚠️ CRITICAL: ALWAYS START HERE ON EVERY SESSION**
 
-1. **Read this file** (you're doing it now!)
-2. **🎯 START HERE:** [`/project/README.md`](project/README.md) - Project management hub (status, roadmap, backlog)
-3. **Navigate to** [`docs/README.md`](docs/README.md) for comprehensive documentation structure
-4. **Check** [`/claude/README.md`](claude/README.md) for detailed AI agent workflow guidance
-5. **Start implementation** at [`docs/implementation/README.md`](docs/implementation/README.md)
+**Step 1 - Check Project Status (MANDATORY):**
+1. **🎯 FIRST ACTION:** Read [`/project/STATUS.md`](project/STATUS.md) - Where are we now? What's completed? What's in progress?
+2. **SECOND:** Review [`/project/BACKLOG.md`](project/BACKLOG.md) - What's the highest priority task right now?
+3. **THIRD:** Read current increment file in [`/project/increments/`](project/increments/) - Detailed user story context
 
-**If you're resuming work:**
-- **First:** Check [`/project/STATUS.md`](project/STATUS.md) to see where we are
-- **Then:** Review [`/project/BACKLOG.md`](project/BACKLOG.md) for prioritized tasks
-- **Next:** Work on current increment in [`/project/increments/`](project/increments/)
+**Step 2 - Understand the Project (First Time Only):**
+- Read [`/project/README.md`](project/README.md) - Explains the project management structure
+- Navigate to [`docs/README.md`](docs/README.md) - Documentation navigation hub
+- Check [`/claude/README.md`](claude/README.md) - Detailed AI agent workflow guidance
+- Browse [`docs/implementation/README.md`](docs/implementation/README.md) - BDD implementation roadmap
+
+**Step 3 - Get Context for Your Task:**
 - Reference section-specific `CLAUDE.md` files in each documentation folder as needed
+- Read relevant business rules from [`docs/foundation/business-rules.md`](docs/foundation/business-rules.md)
+- Check German copy from [`docs/specification/`](docs/specification/) files
 
 ---
 
