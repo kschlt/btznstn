@@ -719,6 +719,299 @@ Feature: [Feature Name]
 - No hover dependencies
 - Use exact German copy from specs
 
+---
+
+## Phase-Specific Critical Implementation Guidance
+
+### Phase 6: Web Booking Forms - Critical Gotchas
+
+**Test Matrices Available:**
+- `/docs/implementation/phase-6-test-matrix.md` - 44 E2E test specifications
+- `/docs/implementation/phase-7-test-matrix.md` - 37-42 E2E test specifications
+
+#### BR-005: Date Extend vs. Shorten Detection (MOST COMPLEX)
+
+**Why this is critical:**
+- Edit booking with date changes requires detecting if approvals should reset
+- **Shorten** (within original bounds) → Approvals **KEEP**
+- **Extend** (earlier start OR later end) → Approvals **RESET**
+- Non-date changes (party size, affiliation, first name) → Approvals **KEEP**
+
+**Common mistake:** Resetting approvals for shorten, keeping for extend (backwards logic)
+
+**Correct implementation:**
+```typescript
+function detectDateChangeType(
+  oldStart: Date,
+  oldEnd: Date,
+  newStart: Date,
+  newEnd: Date
+): 'SHORTENED' | 'EXTENDED' | 'SAME' {
+  const startExtended = newStart < oldStart; // earlier = extended
+  const endExtended = newEnd > oldEnd; // later = extended
+
+  if (startExtended || endExtended) {
+    return 'EXTENDED'; // Reset approvals per BR-005
+  }
+
+  return 'SHORTENED'; // Keep approvals per BR-005
+}
+
+// Examples:
+// Old: Jan 1–10, New: Jan 3–8 → SHORTENED (keep approvals) ✓
+// Old: Jan 1–10, New: Dec 31–10 → EXTENDED (reset approvals) ✓
+// Old: Jan 1–10, New: Jan 1–20 → EXTENDED (reset approvals) ✓
+```
+
+**Test thoroughly:**
+- Shorten start date (Jan 1–10 → Jan 3–10) = keep
+- Shorten end date (Jan 1–10 → Jan 1–5) = keep
+- Extend start earlier (Jan 1–10 → Dec 25–10) = reset
+- Extend end later (Jan 1–10 → Jan 1–20) = reset
+- Party size only change = keep (BR-025)
+- First name only change = keep (BR-025)
+
+---
+
+#### BR-020: Link Detection Must Be Case-Insensitive
+
+**Why this matters:**
+- Users can type "HTTP://", "Www", "MAILTO:", etc.
+- Validation must catch all variations to prevent spam/phishing
+
+**Common mistake:** Using case-sensitive regex: `/http:\/\//`
+
+**Correct implementation:**
+```typescript
+// ✓ CORRECT: Case-insensitive with 'i' flag
+function hasBlockedURL(text: string): boolean {
+  const patterns = [
+    /http[s]?:\/\//i,  // Matches http://, https://, HTTP://, etc.
+    /www\./i,          // Matches www., Www., WWW., etc.
+    /mailto:/i         // Matches mailto:, MAILTO:, etc.
+  ];
+  return patterns.some(pattern => pattern.test(text));
+}
+```
+
+**Applies to:** Description field (create/edit forms), Comment field (deny dialog)
+
+---
+
+#### Date Picker: Conflicts Must Refresh
+
+**Why this matters:**
+- While user has date picker open, another user can book conflicting dates
+- Stale conflict data allows double-booking
+
+**Solution:** Fetch conflicts on every month navigation, not just on form load
+
+---
+
+#### Mobile Date Picker: Don't Use Native `<input type="date">`
+
+**Why this matters:**
+- iOS/Android native date pickers don't support:
+  - Date ranges (start + end)
+  - Blocking specific dates (conflicts)
+  - Visual conflict indicators
+
+**Correct approach:** Build custom date picker (Shadcn Calendar or similar) with 44×44pt touch targets
+
+---
+
+### Phase 7: Approver Interface - Critical Gotchas
+
+**Test Matrix Available:** `/docs/implementation/phase-7-test-matrix.md`
+
+#### BR-023: Query Correctness is CRITICAL
+
+**Why this is the #1 gotcha for Phase 7:**
+- Wrong query = approvers see wrong data
+- Missing approvals = broken approval flow
+
+**Outstanding Tab Query (EXACT REQUIREMENTS):**
+```sql
+-- MUST filter by:
+-- 1. booking.status = Pending
+-- 2. approval.response = NoResponse (for this approver)
+-- 3. Sort by booking.last_activity_at DESC
+
+SELECT bookings.*
+FROM bookings
+JOIN approvals ON approvals.booking_id = bookings.id
+WHERE bookings.status = 'Pending'
+  AND approvals.party_id = :approver_party_id
+  AND approvals.response = 'NoResponse'
+ORDER BY bookings.last_activity_at DESC;
+```
+
+**History Tab Query (EXACT REQUIREMENTS):**
+```sql
+-- MUST include:
+-- 1. All statuses (Pending, Confirmed, Denied - NOT Canceled)
+-- 2. All approvals (regardless of response)
+-- 3. Sort by booking.last_activity_at DESC
+
+SELECT bookings.*
+FROM bookings
+JOIN approvals ON approvals.booking_id = bookings.id
+WHERE bookings.status IN ('Pending', 'Confirmed', 'Denied')
+  AND approvals.party_id = :approver_party_id
+ORDER BY bookings.last_activity_at DESC;
+```
+
+**Common mistakes:**
+- Outstanding includes Denied bookings (should exclude)
+- Outstanding includes bookings where approver already responded (should be NoResponse only)
+- History missing Denied bookings (should include)
+- Wrong sort order (should be DESC, not ASC)
+
+---
+
+#### BR-024: Concurrency Tests Are Mandatory
+
+**Why this matters:**
+- Two approvers clicking approve/deny simultaneously WILL happen in production
+- Without SELECT FOR UPDATE, race conditions corrupt data
+
+**Correct backend pattern:**
+```python
+async def approve_booking(booking_id: int, approver_id: int):
+    async with session.begin():
+        # Lock booking row
+        booking = await session.execute(
+            select(Booking)
+            .where(Booking.id == booking_id)
+            .with_for_update()  # CRITICAL: Row-level lock
+        ).scalar_one()
+
+        # Check current state and update
+        # ...
+```
+
+**Playwright concurrency test pattern:**
+```typescript
+test('concurrent approvals - first wins', async ({ page, context }) => {
+  const page1 = page;
+  const page2 = await context.newPage();
+
+  // Navigate both to same booking
+  await page1.goto('/approver?token=ingeborg_token');
+  await page2.goto('/approver?token=cornelia_token');
+
+  // Click approve simultaneously
+  await Promise.all([
+    page1.click('button:has-text("Zustimmen")'),
+    page2.click('button:has-text("Zustimmen")')
+  ]);
+
+  // Verify: One success, one "Schon erledigt"
+  // ...
+});
+```
+
+**Must test scenarios:**
+- Two simultaneous approves (first wins)
+- Two simultaneous denies (first wins)
+- Approve vs. deny simultaneously (first wins)
+
+---
+
+#### BR-010: Idempotency Edge Cases
+
+**Why this matters:**
+- Users retry failed clicks (slow network, app crash)
+- Email links can be clicked multiple times
+- Action must return same result every time
+
+**Common mistake:** Returning error on second click instead of success
+
+**Correct pattern:** Check state, return "Schon erledigt" success message (not error)
+
+---
+
+### Phase 8: Production Deployment - Critical Gotchas
+
+#### Rate Limiting Must Be Server-Side
+
+**Why this matters:**
+- Client-side rate limiting can be bypassed
+- Production security depends on server-side enforcement
+
+**Correct approach:**
+- Backend enforces all rate limits BEFORE database operations
+- Track: 10 bookings/day per email, 30 requests/hour per IP (BR-012)
+- Return German error messages with remaining time
+
+---
+
+#### Background Jobs: Timezone Handling
+
+**Why this matters:**
+- Jobs must run in Europe/Berlin timezone, not UTC
+- Auto-cleanup at 00:01 Berlin time (BR-028)
+- Weekly digest on Sunday 09:00 Berlin time (BR-009)
+
+**Common mistake:** Scheduling jobs in UTC without conversion
+
+**Correct approach:**
+```python
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+import pytz
+
+berlin_tz = pytz.timezone('Europe/Berlin')
+scheduler = AsyncIOScheduler(timezone=berlin_tz)
+
+# Auto-cleanup: Daily at 00:01 Europe/Berlin
+scheduler.add_job(
+    auto_cleanup_past_pending,
+    CronTrigger(hour=0, minute=1, timezone=berlin_tz),
+    id='auto_cleanup'
+)
+```
+
+---
+
+#### SELECT FOR UPDATE: Deadlock Prevention
+
+**Why this matters:**
+- If two transactions lock rows in different order → deadlock
+
+**Correct pattern:** Always lock in consistent order (booking → approvals → parties)
+
+---
+
+#### Email Retry: Exponential Backoff Must Match Spec
+
+**Why this matters:**
+- BR-022 specifies exact delays: 2s, 4s, 8s
+- Too short → overloads email service
+
+**Correct implementation:**
+```python
+async def send_email_with_retry(email_data: dict, max_attempts: int = 3):
+    delays = [2, 4, 8]  # Seconds between retries (BR-022)
+
+    for attempt in range(max_attempts):
+        try:
+            await email_service.send(email_data)
+            return  # Success
+        except TransientError:
+            if attempt < max_attempts - 1:
+                await asyncio.sleep(delays[attempt])
+            else:
+                raise  # Failed after all attempts
+```
+
+**Must ensure:**
+- Email content unchanged across retries (no mutations)
+- Failed emails logged with correlation ID
+- Exponential backoff matches spec exactly (2s, 4s, 8s)
+
+---
+
 ## Parallel Work Opportunities
 
 **Some overlap possible:**

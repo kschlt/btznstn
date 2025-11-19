@@ -45,6 +45,8 @@
 **Status:** 🚫 **Blocked**
 **Dependencies:** Increment 2 (approval backend) + Increment 3 (frontend core)
 
+**📋 Test Matrix:** `/docs/implementation/phase-7-test-matrix.md` - 37-42 detailed E2E test specifications
+
 ### User Stories (Dependency-Based Order)
 
 #### US-7.1: Approver Overview (Outstanding + History Tabs)

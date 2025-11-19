@@ -191,6 +191,8 @@ npx playwright test          # Should run tests
 **Status:** 🚫 **Blocked** (Phase 5)
 **Dependencies:** Phase 5 complete (calendar component), Playwright configured
 
+**📋 Test Matrix:** `/docs/implementation/phase-6-test-matrix.md` - 44 detailed E2E test specifications
+
 ### User Stories (Dependency-Based Order)
 
 #### US-6.2: Date Picker Component
