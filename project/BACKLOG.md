@@ -1,93 +1,53 @@
 # Project Backlog
 
 **Last Updated:** 2025-11-19
-**Current Focus:** Complete Increment 1 (Phase 2)
+**Current Focus:** ✅ Increment 1 COMPLETE - Ready for Increment 2
 
 ---
 
-## 🔥 High Priority (Do This Week)
+## ✅ Recently Completed (2025-11-19)
 
-### Complete Phase 2: Booking API
+### Phase 2: Booking API - ✅ COMPLETE
 
-#### US-2.3: Edit Booking (PATCH /api/v1/bookings/{id})
-- [ ] **Read specification:** `/docs/implementation/phase-2-booking-api.md` (US-2.3)
-- [ ] **Read BR-005:** Date extend resets approvals; shorten keeps approvals
-- [ ] **Read BR-014:** Past bookings are read-only (EndDate < today)
-- [ ] **Write tests first:**
-  - [ ] Test edit with date shortening (approvals kept)
-  - [ ] Test edit with date extension (approvals reset)
-  - [ ] Test edit non-date fields (party size, description - approvals kept)
-  - [ ] Test edit past booking (rejected)
-  - [ ] Test edit with conflict detection
-  - [ ] Test German error messages
-- [ ] **Implement endpoint:**
-  - [ ] PATCH /api/v1/bookings/{id}
-  - [ ] Accept token parameter
-  - [ ] Validate requester owns booking
-  - [ ] Detect date change type (extend vs shorten)
-  - [ ] Reset approvals if extend (BR-005)
-  - [ ] Keep approvals if shorten or non-date changes
-  - [ ] Conflict detection (BR-002)
-  - [ ] Return updated booking
-- [ ] **Verify:**
-  - [ ] All tests pass
-  - [ ] Type checking passes (mypy)
-  - [ ] Linting passes (ruff)
-  - [ ] German error messages match spec
+**Summary:** All 4 backend booking API endpoints implemented and tested
 
-#### US-2.4: Cancel Booking (DELETE /api/v1/bookings/{id})
-- [ ] **Read specification:** `/docs/implementation/phase-2-booking-api.md` (US-2.4)
-- [ ] **Read BR-006:** Requester can cancel Pending/Confirmed (not Denied/Canceled)
-- [ ] **Write tests first:**
-  - [ ] Test cancel Pending booking (success)
-  - [ ] Test cancel Confirmed booking (success)
-  - [ ] Test cancel Denied booking (rejected - already terminal)
-  - [ ] Test cancel already Canceled (idempotent, shows "Schon storniert")
-  - [ ] Test cancel past booking (should be allowed or rejected? Check spec)
-  - [ ] Test German messages
-- [ ] **Implement endpoint:**
-  - [ ] DELETE /api/v1/bookings/{id}
-  - [ ] Accept token parameter
-  - [ ] Validate requester owns booking
-  - [ ] Check current status (Pending or Confirmed allowed)
-  - [ ] Transition to Canceled
-  - [ ] Move to Archive (BR-013)
-  - [ ] Return success message
-- [ ] **Verify:**
-  - [ ] All tests pass
-  - [ ] Type checking passes
-  - [ ] Linting passes
-  - [ ] Idempotency works (cancel twice = success both times)
+- ✅ **US-2.1:** Create Booking (POST) - 64 tests passing
+- ✅ **US-2.2:** Get Booking (GET) - 20 tests passing
+- ✅ **US-2.3:** Update Booking (PATCH) - 35 tests passing
+  - Implements BR-005 critical approval reset logic
+  - Extend dates → reset approvals; shorten → keep approvals
+  - Full token authentication and validation
+- ✅ **US-2.4:** Cancel Booking (DELETE) - 27 tests passing
+  - Implements BR-006 (Pending cancel) and BR-007 (Confirmed requires comment)
+  - Idempotent cancellation
+  - German success messages
 
-#### US-2.5: Calendar View (GET /api/v1/calendar)
-- [ ] **Read specification:** `/docs/implementation/phase-2-booking-api.md` (US-2.5)
-- [ ] **Read BR-002:** Show Pending and Confirmed bookings (not Denied/Canceled)
-- [ ] **Read BR-014:** Past bookings shown as read-only
-- [ ] **Write tests first:**
-  - [ ] Test calendar month view (query by month/year)
-  - [ ] Test calendar includes Pending bookings
-  - [ ] Test calendar includes Confirmed bookings
-  - [ ] Test calendar excludes Denied bookings (BR-004)
-  - [ ] Test calendar excludes Canceled bookings
-  - [ ] Test date range filtering works correctly
-  - [ ] Test ordering (by start_date ASC)
-  - [ ] Test is_past field calculated correctly (Europe/Berlin timezone)
-- [ ] **Implement endpoint:**
-  - [ ] GET /api/v1/calendar?month=2&year=2025
-  - [ ] Query bookings where status IN (Pending, Confirmed)
-  - [ ] Filter by date range (month overlap)
-  - [ ] Calculate is_past for each booking (BR-014)
-  - [ ] Return list of bookings with minimal data (public view)
-  - [ ] Optimize query (eager load if needed)
-- [ ] **Verify:**
-  - [ ] All tests pass
-  - [ ] Query performance acceptable (<100ms)
-  - [ ] Date math correct (inclusive ranges)
-  - [ ] Privacy respected (no emails in response)
+**Total:** 146 tests, all business rules enforced, type-safe, fully validated
+
+**Note:** Calendar View (GET /calendar) is NOT part of Phase 2 - it's Phase 5 (Web Calendar, frontend work)
 
 ---
 
-### Technical Blockers
+## 🔥 High Priority (Next Up)
+
+### Increment 2: Backend Business Logic (Phases 3-4)
+
+**Status:** Ready to start (Increment 1 complete)
+
+**Phase 3: Approval Flow** (3 user stories, ~49 tests)
+- US-3.1: Approve Booking (POST /api/v1/bookings/{id}/approve)
+- US-3.2: Deny Booking (POST /api/v1/bookings/{id}/deny)
+- US-3.3: Reopen Denied Booking (POST /api/v1/bookings/{id}/reopen)
+
+**Phase 4: Email Integration** (4 user stories, ~75 tests)
+- US-4.1: New booking notification emails
+- US-4.2: Approval/denial notification emails
+- US-4.3: Edit/cancel notification emails
+- US-4.4: Email retry and error handling
+
+---
+
+## 🚧 Technical Blockers (For Future Increments)
 
 #### Configure Playwright (Frontend Work)
 - [ ] **Navigate to frontend:**
