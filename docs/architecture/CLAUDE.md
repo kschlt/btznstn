@@ -46,6 +46,65 @@ Architecture decisions and system design:
    (Keep original decision text unchanged)
 ```
 
+### ⚠️ ONE Decision Per ADR (Fundamental Principle)
+
+**An ADR captures exactly ONE architectural decision, not several.**
+
+**Why this matters:**
+- Allows superseding individual decisions without affecting others
+- Creates granular evolution trail
+- Prevents bundling unrelated choices
+- Makes decision boundaries explicit
+
+**How to identify "one decision":**
+- Ask: "Can these choices be changed independently?"
+- If YES → Separate ADRs
+- If NO (choices are inseparable) → One ADR
+
+**Examples:**
+
+**❌ Wrong - Multiple Independent Decisions:**
+```markdown
+ADR-010: CORS Configuration
+- allow_origins = frontend domain
+- allow_credentials = true
+- allow_methods = ["GET", "POST"]
+- allow_headers = ["*"]
+```
+*Problem: These can be changed independently. allow_credentials is a security policy, allow_methods is an API surface decision, allow_origins is an access control decision.*
+
+**✅ Correct - Separate ADRs:**
+```markdown
+ADR-010: CORS Allow Credentials (security policy)
+ADR-011: CORS Allowed Methods (API surface)
+ADR-012: CORS Allowed Origins (access control)
+```
+
+**✅ Correct - One Cohesive Decision:**
+```markdown
+ADR-010: Naive DateTime Storage with Europe/Berlin Assumption
+- Store TIMESTAMP WITHOUT TIME ZONE
+- All datetimes represent Europe/Berlin local time
+```
+*Valid: Naive storage REQUIRES a timezone assumption. These are inseparable parts of one strategy.*
+
+**When bundling is acceptable:**
+- Multiple tools that form ONE strategy (e.g., "Type Safety Strategy" = mypy + Pydantic + TypeScript + Zod work together)
+- Choices that are architecturally inseparable (e.g., naive storage + timezone assumption)
+- Trade-off: If one part of the bundle needs changing, the entire ADR must be superseded
+
+**When to split:**
+- Choices that could change independently
+- Unrelated concerns bundled together
+- Different teams/roles would make different parts of the decision
+
+**Before creating an ADR, ask:**
+1. What is the ONE architectural decision being made?
+2. Could any part of this decision change without affecting the others?
+3. If I need to supersede part of this decision later, would I need to supersede all of it?
+
+If answers suggest multiple decisions, create multiple ADRs.
+
 ---
 
 ## How to Work with ADRs as an AI Agent
@@ -62,7 +121,7 @@ Architecture decisions and system design:
 Step 1: Read ADR-004 (Email Service)
 Step 2: See decision = Resend
 Step 3: Use Resend (not SendGrid, not AWS SES)
-Step 4: If Resend doesn't work, propose ADR-010 to supersede ADR-004
+Step 4: If Resend doesn't work, propose ADR-011 to supersede ADR-004
 ```
 
 ### ADRs as Constraints
@@ -77,6 +136,7 @@ Step 4: If Resend doesn't work, propose ADR-010 to supersede ADR-004
 - ADR-007: Deploy to Fly.io (backend) + Vercel (frontend)
 - ADR-008: Test with Pytest + Playwright (not Jest, not Vitest)
 - ADR-009: Test patterns (repository pattern, factories, fixtures)
+- ADR-010: Naive datetime storage with Europe/Berlin timezone (not UTC, not timezone-aware)
 
 **If you need to deviate:**
 1. STOP implementation
@@ -93,19 +153,19 @@ Step 4: If Resend doesn't work, propose ADR-010 to supersede ADR-004
 
 **1. Technology Choice Not Covered**
 - Example: Need a background job scheduler (no existing ADR)
-- Action: Create ADR-010: Background Job Scheduler (Celery vs APScheduler)
+- Action: Create ADR-011: Background Job Scheduler (Celery vs APScheduler)
 
 **2. Current ADR Doesn't Work**
 - Example: Resend API limits hit, need different provider
-- Action: Create ADR-011: Supersede ADR-004, migrate to SendGrid
+- Action: Create ADR-012: Supersede ADR-004, migrate to SendGrid
 
 **3. New Architectural Pattern Needed**
 - Example: Need caching strategy (Redis, in-memory, etc.)
-- Action: Create ADR-012: Caching Strategy
+- Action: Create ADR-013: Caching Strategy
 
 **4. Significant Change to Existing Decision**
 - Example: Move from SQLAlchemy to Prisma
-- Action: Create ADR-013: Supersede ADR-003, switch ORM
+- Action: Create ADR-014: Supersede ADR-003, switch ORM
 
 ### Situations NOT Requiring ADR
 
@@ -134,7 +194,7 @@ Ask yourself:
 ### Step 2: Use ADR Template
 
 **File naming:** `adr-{number}-{title}.md`
-- Number: Next available (currently ADR-010)
+- Number: Next available (currently ADR-011)
 - Title: Kebab-case, descriptive
 
 **Template:**
@@ -228,7 +288,7 @@ Current situation: {Context}
 Proposed solution: {Your recommendation}
 Rationale: {Why}
 
-Should I create ADR-010: {Title}?
+Should I create ADR-011: {Title}?
 ```
 
 ### Step 4: Create ADR After Approval
@@ -252,6 +312,7 @@ Only after user approves, create the ADR file.
 | **ADR-007** | Fly.io + Vercel + GitHub Actions | Accepted | Deployment |
 | **ADR-008** | Pytest + Playwright | Accepted | Testing frameworks |
 | **ADR-009** | Repository pattern + factories | Accepted | Test patterns |
+| **ADR-010** | Naive DateTime Storage (Europe/Berlin) | Accepted | DateTime/timezone strategy |
 
 **All are constraints. Follow them.**
 
