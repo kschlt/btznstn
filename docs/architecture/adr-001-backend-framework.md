@@ -341,9 +341,9 @@ Visit: `http://localhost:8000/docs`
 
 ## Related ADRs
 
-- [ADR-003: Database & ORM](adr-003-database-orm.md) - SQLAlchemy integration
+- [ADR-013: SQLAlchemy ORM](adr-013-sqlalchemy-orm.md) - SQLAlchemy integration
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md) - Mypy + Pydantic
-- [ADR-007: Deployment Strategy](adr-007-deployment.md) - Fly.io deployment
+- [ADR-016: Fly.io Backend Hosting](adr-016-flyio-backend-hosting.md) - Fly.io deployment
 
 ---
 

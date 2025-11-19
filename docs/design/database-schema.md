@@ -804,7 +804,8 @@ async def db_session():
 - [Data Model (Entities)](../specification/data-model.md) - High-level entity descriptions
 - [Business Rules](../foundation/business-rules.md) - BR-001 to BR-029
 - [API Specification](api-specification.md) - Endpoints that use this schema
-- [ADR-003: Database & ORM](../architecture/adr-003-database-orm.md) - PostgreSQL + SQLAlchemy decision
+- [ADR-012: PostgreSQL Database](../architecture/adr-012-postgresql-database.md) - PostgreSQL decision
+- [ADR-013: SQLAlchemy ORM](../architecture/adr-013-sqlalchemy-orm.md) - SQLAlchemy decision
 
 ---
 

@@ -11,13 +11,16 @@ This is the **Betzenstein Booking & Approval Application** - a complete, impleme
 **If this is your first time in this repository:**
 
 1. **Read this file** (you're doing it now!)
-2. **Navigate to** [`docs/README.md`](docs/README.md) for documentation structure
-3. **Check** [`/claude/README.md`](claude/README.md) for detailed workflow guidance
-4. **Start implementation** at [`docs/implementation/README.md`](docs/implementation/README.md)
+2. **🎯 START HERE:** [`/project/README.md`](project/README.md) - Project management hub (status, roadmap, backlog)
+3. **Navigate to** [`docs/README.md`](docs/README.md) for comprehensive documentation structure
+4. **Check** [`/claude/README.md`](claude/README.md) for detailed AI agent workflow guidance
+5. **Start implementation** at [`docs/implementation/README.md`](docs/implementation/README.md)
 
 **If you're resuming work:**
-- Jump directly to the phase you're working on in [`docs/implementation/`](docs/implementation/)
-- Reference section-specific `CLAUDE.md` files in each documentation folder
+- **First:** Check [`/project/STATUS.md`](project/STATUS.md) to see where we are
+- **Then:** Review [`/project/BACKLOG.md`](project/BACKLOG.md) for prioritized tasks
+- **Next:** Work on current increment in [`/project/increments/`](project/increments/)
+- Reference section-specific `CLAUDE.md` files in each documentation folder as needed
 
 ---
 

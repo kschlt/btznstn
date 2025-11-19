@@ -416,7 +416,7 @@ npm run dev
 - [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI integration
 - [ADR-005: UI Framework](adr-005-ui-framework.md) - Shadcn/ui + Tailwind
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md) - TypeScript + Zod
-- [ADR-007: Deployment Strategy](adr-007-deployment.md) - Vercel deployment
+- [ADR-017: Vercel Frontend Hosting](adr-017-vercel-frontend-hosting.md) - Vercel deployment
 
 ---
 

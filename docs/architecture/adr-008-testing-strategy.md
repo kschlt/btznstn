@@ -783,7 +783,7 @@ npx playwright test
 - [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI testing patterns
 - [ADR-002: Web Framework](adr-002-frontend-framework.md) - Next.js testing
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md) - Mypy + TSC in CI
-- [ADR-007: Deployment Strategy](adr-007-deployment.md) - CI/CD integration
+- [ADR-018: GitHub Actions CI/CD](adr-018-github-actions-cicd.md) - CI/CD integration
 
 ---
 

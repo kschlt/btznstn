@@ -1,9 +1,24 @@
 # ADR-003: Database & ORM - PostgreSQL + SQLAlchemy on Fly.io
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-012](adr-012-postgresql-database.md), [ADR-013](adr-013-sqlalchemy-orm.md), [ADR-014](adr-014-alembic-migrations.md), [ADR-015](adr-015-flyio-postgres-hosting.md)
 **Date:** 2025-01-17
+**Superseded:** 2025-01-19
 **Deciders:** Solution Architect
 **Context:** AI-driven development (Claude Code)
+
+---
+
+## Supersession Note
+
+This ADR bundled multiple independent architectural decisions:
+1. **Database choice**: PostgreSQL → [ADR-012](adr-012-postgresql-database.md)
+2. **ORM choice**: SQLAlchemy → [ADR-013](adr-013-sqlalchemy-orm.md)
+3. **Migrations tool**: Alembic → [ADR-014](adr-014-alembic-migrations.md)
+4. **Database hosting**: Fly.io Postgres → [ADR-015](adr-015-flyio-postgres-hosting.md)
+
+These decisions can now be superseded independently following the "One Decision Per ADR" principle.
+
+**Original decision content preserved below for historical reference.**
 
 ---
 

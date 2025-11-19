@@ -734,7 +734,8 @@ API implementation order:
 - [Error Handling](../specification/error-handling.md) - Error messages
 - [Authentication Flow](authentication-flow.md) - Token generation/validation
 - [ADR-001: API Framework](../architecture/adr-001-backend-framework.md) - FastAPI
-- [ADR-003: Database & ORM](../architecture/adr-003-database-orm.md) - PostgreSQL + SQLAlchemy
+- [ADR-012: PostgreSQL Database](../architecture/adr-012-postgresql-database.md) - PostgreSQL
+- [ADR-013: SQLAlchemy ORM](../architecture/adr-013-sqlalchemy-orm.md) - SQLAlchemy
 
 ---
 
