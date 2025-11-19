@@ -1,33 +1,37 @@
-# Increment 4: Frontend Approver
+# Increment 4: Production Ready
 
-**Status:** 🚫 **Blocked** (Depends on Increments 2 and 3)
-**Phases:** 7
-**Dependencies:** Increment 2 (approval backend) + Increment 3 (frontend core) complete
-**Target Start:** After Phases 3-6 complete
-**Estimated Effort:** 2-3 days
+**Status:** 🚫 **Blocked** (Depends on all previous increments)
+**Phases:** 8
+**Dependencies:** Increments 1-3 complete (all features implemented)
+**Target Start:** After Phases 0-7 complete
+**Estimated Effort:** 3-4 days
+
+**🎯 Backend-First Strategy:** This increment starts AFTER all functionality is complete
 
 ---
 
 ## 📋 Overview
 
-**Goal:** Build approver-facing interface for reviewing and acting on booking requests.
+**Goal:** Optimize performance, ensure accessibility compliance, deploy to production.
 
 **Deliverables:**
-- Approver overview (Outstanding + History tabs)
-- Approve action (one-click from email or overview)
-- Deny action with comment (comment validation)
-- BR-024 first-action-wins concurrency handling
-- BR-023 query correctness (Outstanding vs History filtering)
-- All German UI copy from specifications
-- Mobile-responsive (iPhone 8 class, 375px width)
+- Performance optimization (Lighthouse ≥90, TTI <3s)
+- Accessibility compliance (WCAG AA, axe-core 0 violations)
+- Production deployment (Fly.io + Vercel)
+- Rate limiting enforced (BR-012)
+- Background jobs scheduled (BR-028 auto-cleanup, BR-013 purge, BR-009 weekly digest)
+- Email retry logic verified (BR-022)
+- Monitoring and error logging configured
 
 **Success Criteria:**
-- All Playwright E2E tests passing (~40 total)
-- Outstanding/History tabs filter correctly (BR-023)
-- Approve/Deny actions handle concurrency (BR-024)
-- Comment validation working (BR-020 link blocking)
-- Mobile tested (375px viewport)
-- German copy matches spec exactly
+- Lighthouse Performance ≥90
+- Lighthouse Accessibility = 100
+- All WCAG AA criteria met
+- Backend deployed to Fly.io Frankfurt
+- Frontend deployed to Vercel
+- Rate limits enforced server-side
+- Background jobs running reliably
+- All 140 estimated tests passing
 
 ---
 
@@ -35,210 +39,275 @@
 
 | Phase | User Stories | Draft | Specified | Implemented | Status |
 |-------|--------------|-------|-----------|-------------|--------|
-| **7** | 3 | 0 | 3 | 0 | 🚫 Blocked |
+| **8** | 3 | 0 | 3 | 0 | 🚫 Blocked |
 | **Total** | **3** | **0** | **3** | **0** | **🚫 0%** |
 
 ---
 
-## 🎯 Phase 7: Approver Interface
+## 🎯 Phase 8: Polish & Production
 
 **Status:** 🚫 **Blocked**
-**Dependencies:** Increment 2 (approval backend) + Increment 3 (frontend core)
-
-**📋 Test Matrix:** `/docs/implementation/phase-7-test-matrix.md` - 37-42 detailed E2E test specifications
+**Dependencies:** All phases 0-7 complete
 
 ### User Stories (Dependency-Based Order)
 
-#### US-7.1: Approver Overview (Outstanding + History Tabs)
+#### US-8.1: Performance Optimization
 **Status:** ✅ **Specified**
-**Estimated Tests:** 15
-**Priority:** P0 (Foundation)
+**Estimated Tests:** 21
+**Priority:** P0 (Production readiness)
 
-**Description:** Two-tab interface showing outstanding approvals and historical approvals.
+**Description:** Optimize backend and frontend performance to meet targets.
 
 **Key Business Rules:**
-- BR-003: Token must validate to one of 3 approvers
-- BR-023: **CRITICAL** - Outstanding = NoResponse + Pending (sorted LastActivityAt DESC); History = All statuses (sorted LastActivityAt DESC)
-- BR-004: Denied bookings visible in History (read-only), not in Outstanding
-- BR-014: Past bookings disable approve/deny buttons
-- BR-015: Self-approved bookings visible
+- BR-023: Approver list queries must use eager loading (prevent N+1)
+
+**Performance Targets:**
+- Time to Interactive (TTI): <3s
+- Lighthouse Performance: ≥90
+- First Contentful Paint (FCP): <1.5s
+- Largest Contentful Paint (LCP): <2.5s
+- Cumulative Layout Shift (CLS): <0.1
+- Bundle size (gzipped): <60KB
+- API response time (p95): <500ms
 
 **Acceptance Criteria:**
-- [ ] Access via /approver?token={approver_token}
-- [ ] Token validation (only Ingeborg, Cornelia, Angelika)
-- [ ] Two tabs: "Ausstehend" (Outstanding) and "Verlauf" (History)
-- [ ] **Outstanding tab:**
-  - [ ] Shows only Pending bookings where approver response = NoResponse
-  - [ ] Sorted by LastActivityAt DESC (most recent first)
-  - [ ] Each item shows: Requester first name, dates, party size, approve/deny buttons
-  - [ ] Empty state: "Keine ausstehenden Anfragen."
-- [ ] **History tab:**
-  - [ ] Shows all bookings (Pending, Confirmed, Denied - not Canceled)
-  - [ ] Sorted by LastActivityAt DESC
-  - [ ] Each item shows: Requester first name, dates, status, approver's decision
-  - [ ] Read-only (no action buttons)
-  - [ ] Empty state: "Noch keine Aktivität."
-- [ ] Denied bookings appear in History, not Outstanding (BR-004)
-- [ ] Past bookings have disabled action buttons (BR-014)
-- [ ] Mobile-responsive (375px, tabs stack)
-- [ ] 15 E2E tests passing
 
-**German Copy:**
-- Tabs: "Ausstehend", "Verlauf"
-- Empty Outstanding: "Keine ausstehenden Anfragen."
-- Empty History: "Noch keine Aktivität."
-- Button labels: "Zustimmen", "Ablehnen"
+**Backend:**
+- [ ] Database queries optimized (eager loading with selectinload)
+- [ ] Indexes verified (date range GiST, status, email, last_activity_at DESC)
+- [ ] N+1 queries eliminated (count SQL statements in tests)
+- [ ] Calendar query uses index (<100ms for 1000+ bookings)
+- [ ] Approver outstanding/history queries use selectinload (<200ms)
+- [ ] Connection pooling configured (10-20 connections)
+
+**Frontend:**
+- [ ] Code splitting implemented (vendor, main, calendar separate bundles)
+- [ ] Lazy loading for calendar view, approval forms, details dialogs
+- [ ] Bundle size <60KB gzipped
+- [ ] Lighthouse Performance ≥90
+- [ ] TTI <3s, FCP <1.5s, LCP <2.5s, CLS <0.1
+- [ ] Images optimized (if any)
+- [ ] Unused CSS/JS removed (tree-shaking)
+
+**Tests:**
+- [ ] 5 backend performance tests (query benchmarks, N+1 detection)
+- [ ] 4 API response time tests (calendar, approver list, create, get)
+- [ ] 3 Lighthouse audits (performance, best practices, SEO)
+- [ ] 3 bundle size tests (main, code splitting, lazy loading)
+- [ ] 5 Core Web Vitals tests (TTI, FCP, LCP, CLS, load test)
+- [ ] 1 concurrent request test (100 concurrent calendar requests)
 
 **Files:**
-- Component: `/web/app/approver/page.tsx` (to create)
-- Components: `/web/app/components/Approver/OutstandingTab.tsx`, `HistoryTab.tsx` (to create)
-- Tests: `/web/tests/e2e/approver-overview.spec.ts` (to create)
-- Spec: `/docs/implementation/phase-7-approver-interface.md`
+- Optimization: Update existing backend/frontend files
+- Tests: `/api/tests/performance/` (to create), `/web/tests/performance/` (to create)
+- Spec: `/docs/implementation/phase-8-polish.md`
 
 ---
 
-#### US-7.2: One-Click Approve
+#### US-8.2: Accessibility (WCAG AA)
 **Status:** ✅ **Specified**
-**Estimated Tests:** 15
-**Priority:** P0 (Core functionality)
+**Estimated Tests:** 55
+**Priority:** P0 (Legal compliance)
 
-**Description:** Approver approves booking with one click (from email link or overview).
+**Description:** Ensure full WCAG AA compliance and accessibility.
 
 **Key Business Rules:**
-- BR-003: Token validation
-- BR-010: **CRITICAL** - Idempotent (same result on retry)
-- BR-015: Self-approval allowed (idempotent)
-- BR-024: **CRITICAL** - First-action-wins (if two approvers click simultaneously)
+- BR-011: German UI (all ARIA labels in German)
+- BR-016, 019, 020: Validation errors must be accessible
+
+**Accessibility Targets:**
+- axe-core: 0 violations
+- Lighthouse Accessibility: 100
+- WCAG AA compliance (all criteria)
+- Keyboard navigation: 100% functional
+- Screen reader compatible
+- Color contrast: ≥4.5:1 (text), ≥3:1 (UI components)
+- Touch targets: ≥44×44pt
 
 **Acceptance Criteria:**
-- [ ] Approve button in Outstanding list
-- [ ] Approve link in email works (redirects to result page)
-- [ ] POST /api/v1/bookings/{id}/approve called
-- [ ] Idempotent: Click twice = success both times
-- [ ] Result page: "Danke – du hast zugestimmt"
-- [ ] If 3rd approval → Booking moves to Confirmed, disappears from Outstanding
-- [ ] If race condition (two simultaneous approvals) → First wins, second sees "Schon erledigt – bereits bestätigt"
-- [ ] Self-approver can approve again (idempotent, BR-015)
-- [ ] Cannot approve Denied booking (error: "Schon erledigt – abgelehnt")
-- [ ] Cannot approve past booking (error: "Diese Anfrage ist bereits abgelaufen.")
-- [ ] Mobile-responsive result page
-- [ ] 15 E2E tests passing
 
-**German Copy:**
-- Button: "Zustimmen"
-- Result page: "Danke – du hast zugestimmt"
-- Already confirmed: "Schon erledigt. Die Buchung ist bereits bestätigt."
-- Already denied: "Schon erledigt. {{Partei}} hat bereits abgelehnt – die Anfrage ist jetzt abgelehnt (nicht öffentlich)."
-- Past booking: "Diese Anfrage ist bereits abgelaufen."
+**Automated Testing:**
+- [ ] 10 axe-core tests (0 violations on all 10 pages: calendar, forms, approver, details, etc.)
+- [ ] Lighthouse Accessibility = 100
+
+**Keyboard Navigation:**
+- [ ] 10 keyboard navigation tests (calendar, forms, dialogs)
+- [ ] Tab navigates through all interactive elements
+- [ ] Shift+Tab reverses navigation
+- [ ] Enter/Space activates buttons
+- [ ] Esc closes dialogs
+- [ ] Arrow keys navigate calendar dates
+- [ ] No keyboard traps
+
+**Screen Reader:**
+- [ ] 9 screen reader tests (landmarks, labels, errors, content)
+- [ ] All buttons have accessible names (ARIA labels in German)
+- [ ] All form inputs have associated `<label>` elements
+- [ ] Error messages announced via aria-live
+- [ ] Status badges have aria-label
+- [ ] Affiliation colors not the only indicator (text labels present)
+
+**Color Contrast:**
+- [ ] 10 contrast tests (text ≥4.5:1, UI ≥3:1)
+- [ ] Affiliation colors (Ingeborg, Cornelia, Angelika) + text ≥4.5:1
+- [ ] Focus indicator ≥3:1 contrast
+
+**Mobile Accessibility:**
+- [ ] 4 touch target tests (all buttons ≥44×44pt, 8px spacing)
+- [ ] Mobile viewport (375px) works
+- [ ] No horizontal scrolling
+
+**Focus & Visual:**
+- [ ] 5 focus indicator tests (visible, ≥3:1 contrast, ≥2px size, logical order)
+
+**German Text:**
+- [ ] 3 German accessibility tests (ARIA labels, error messages, form labels)
 
 **Files:**
-- Action: Update `/web/app/approver/page.tsx` (approve handler)
-- API call: `/web/app/lib/api.ts` (approve function)
-- Result page: `/web/app/approver/result/page.tsx` (to create)
-- Tests: `/web/tests/e2e/approve-action.spec.ts` (to create)
+- Updates: All frontend components (add ARIA labels, keyboard handlers)
+- Tests: `/web/tests/accessibility/` (to create)
 
 ---
 
-#### US-7.3: Deny with Comment
+#### US-8.3: Production Deployment
 **Status:** ✅ **Specified**
-**Estimated Tests:** 18
-**Priority:** P0 (Core functionality)
+**Estimated Tests:** 64
+**Priority:** P0 (Production launch)
 
-**Description:** Approver denies booking with required comment (validates for links).
+**Description:** Deploy to production (Fly.io + Vercel) with all production features enabled.
 
 **Key Business Rules:**
-- BR-004: Denial requires comment, frees dates immediately, hidden from public
-- BR-010: Idempotent
-- BR-020: **CRITICAL** - Block links in comment (http://, https://, www, mailto:)
-- BR-024: First-action-wins
+- BR-010: Tokens never expire (production reliability)
+- BR-012: **CRITICAL** - Rate limiting (10 bookings/day per email, 30 requests/hour per IP)
+- BR-013: Archive purge (monthly job)
+- BR-021: Link recovery cooldown (60 seconds)
+- BR-022: Email retries (3 attempts, exponential backoff)
+- BR-024, 029: Concurrency safety (SELECT FOR UPDATE, first-wins)
+- BR-028: Auto-cleanup of past Pending bookings (daily at 00:01 Europe/Berlin)
 
 **Acceptance Criteria:**
-- [ ] Deny button in Outstanding list
-- [ ] Click "Ablehnen" → Opens comment dialog
-- [ ] Dialog shows booking context (requester name, dates)
-- [ ] Comment textarea (required, max 500 chars)
-- [ ] Comment validation (client-side + server-side):
-  - [ ] Empty comment rejected: "Bitte gib einen kurzen Grund an."
-  - [ ] Links rejected (BR-020): "Links sind hier nicht erlaubt. Bitte Text ohne Links verwenden."
-  - [ ] Umlaut/emoji/newline allowed
-  - [ ] 501+ chars rejected: "Text ist zu lang (max. 500 Zeichen)."
-- [ ] Submit button: "Ja, ablehnen"
-- [ ] Cancel button closes dialog without action
-- [ ] POST /api/v1/bookings/{id}/deny called
-- [ ] Result page: "Danke – du hast abgelehnt"
-- [ ] Booking disappears from Outstanding, appears in History as Denied
-- [ ] Dates freed immediately (calendar shows as available)
-- [ ] If Confirmed booking → Show warning dialog before deny
-- [ ] Idempotent: Deny twice = success both times
-- [ ] Mobile-responsive dialog (full-screen on 375px)
-- [ ] 18 E2E tests passing
 
-**German Copy:**
-- Button: "Ablehnen"
-- Dialog title: "Grund für Ablehnung"
-- Confirmed warning: "Buchung ist bereits bestätigt. Du möchtest eine bereits bestätigte Buchung ablehnen. Bist du sicher? Bitte gib einen kurzen Grund an."
-- Submit button: "Ja, ablehnen"
-- Cancel button: "Abbrechen"
-- Result: "Danke – du hast abgelehnt"
-- Comment required: "Bitte gib einen kurzen Grund an."
-- Link blocked: "Links sind hier nicht erlaubt. Bitte Text ohne Links verwenden."
+**Infrastructure:**
+- [ ] 10 deployment tests (Fly.io health, Vercel build, database, migrations)
+- [ ] Backend deployed to Fly.io Frankfurt
+- [ ] Frontend deployed to Vercel
+- [ ] PostgreSQL 15+ on Fly.io (co-located with backend)
+- [ ] Database migrations run on deploy
+- [ ] All indexes created
+- [ ] Environment variables loaded from Fly.io secrets
+- [ ] Health check endpoint (GET /health → 200 OK)
+
+**Rate Limiting:**
+- [ ] 8 rate limiting tests (booking submission, IP-based, link recovery, cooldown)
+- [ ] 10 bookings/day per email enforced (BR-012)
+- [ ] 30 requests/hour per IP enforced
+- [ ] 5 link recovery/hour per email enforced
+- [ ] 60-second cooldown on link recovery (BR-021)
+- [ ] German error messages for rate limits
+
+**Email Reliability:**
+- [ ] 6 email tests (delivery, retries, logging, consistency)
+- [ ] Resend integration configured
+- [ ] 3-attempt retry with exponential backoff (BR-022)
+- [ ] Failed emails logged with correlation ID
+- [ ] Email content consistent across retries
+
+**Concurrency Safety:**
+- [ ] 8 concurrency tests (first-action-wins, first-write-wins, locking)
+- [ ] SELECT FOR UPDATE on approve/deny (BR-024)
+- [ ] Transaction isolation for create/extend (BR-029)
+- [ ] Concurrent approvals handled correctly
+- [ ] Concurrent bookings handled correctly
+
+**Background Jobs:**
+- [ ] 13 background job tests (auto-cleanup, archive purge, weekly digest)
+- [ ] Auto-cleanup runs daily at 00:01 Europe/Berlin (BR-028)
+- [ ] Archive purge runs monthly (BR-013)
+- [ ] Weekly digest runs Sunday 09:00 Europe/Berlin (BR-009)
+- [ ] All jobs log execution (success/failure)
+
+**Idempotency:**
+- [ ] 4 idempotency tests (action links, "Schon erledigt" messages)
+- [ ] Approve/Deny/Cancel links idempotent (BR-010)
+
+**Smoke Tests:**
+- [ ] 5 end-to-end smoke tests (create booking, approve, deny, edit, cancel)
+
+**Security & Stability:**
+- [ ] 6 security tests (HTTPS, CORS, headers, timezone, load test, error logging)
+- [ ] HTTPS enforced
+- [ ] CORS configured
+- [ ] Security headers present (HSTS, X-Frame-Options)
+- [ ] Timezone handling correct (Europe/Berlin for business logic, UTC in database)
+- [ ] Production handles 100 concurrent calendar requests
+- [ ] Error logging working (Fly.io logs or Sentry)
 
 **Files:**
-- Dialog component: `/web/app/components/Approver/DenyDialog.tsx` (to create)
-- Action: Update `/web/app/approver/page.tsx` (deny handler)
-- API call: `/web/app/lib/api.ts` (deny function)
-- Tests: `/web/tests/e2e/deny-action.spec.ts` (to create)
+- Deployment config: `/api/fly.toml`, `/web/vercel.json` (to create)
+- Environment: `.env.production.example` (to create)
+- Jobs: `/api/app/jobs/` (auto_cleanup.py, archive_purge.py, weekly_digest.py)
+- Tests: `/api/tests/production/` (to create)
+- Spec: `/docs/deployment/flyio-setup.md`, `resend-setup.md`
 
 ---
 
-### Phase 7: Definition of Done
+### Phase 8: Definition of Done
 
 - [ ] All 3 user stories implemented
-- [ ] Outstanding/History tabs filter correctly (BR-023)
-- [ ] Approve/Deny actions work with concurrency safety (BR-024)
-- [ ] Comment validation working (BR-020)
-- [ ] All E2E tests passing (~48 total)
-- [ ] Mobile tested (375px viewport)
-- [ ] German copy matches spec exactly
-- [ ] Type checking passes (tsc)
-- [ ] Linting passes (eslint)
-- [ ] Accessibility basics (ARIA labels, keyboard nav)
+- [ ] Lighthouse Performance ≥90, Accessibility = 100
+- [ ] All WCAG AA criteria met (axe-core 0 violations)
+- [ ] Backend deployed to Fly.io Frankfurt
+- [ ] Frontend deployed to Vercel
+- [ ] Rate limiting enforced (BR-012)
+- [ ] Background jobs scheduled (BR-028, BR-013, BR-009)
+- [ ] Email retries working (BR-022)
+- [ ] Concurrency safety verified (BR-024, BR-029)
+- [ ] All 140 tests passing
+- [ ] Production smoke tests pass
+- [ ] Monitoring configured
+- [ ] Error logging working
 
 ---
 
 ## 📚 Specification References
 
 **Business Rules:**
-- `/docs/foundation/business-rules.md` - BR-003, 004, 010, 014, 015, 020, 023, 024
+- `/docs/foundation/business-rules.md` - BR-009, 010, 012, 013, 021, 022, 023, 024, 028, 029
 
 **Phase Specification:**
-- `/docs/implementation/phase-7-approver-interface.md`
+- `/docs/implementation/phase-8-polish.md`
 
-**German Copy:**
-- `/docs/specification/ui-screens.md` - All UI labels and button text (lines 253-292)
-- `/docs/specification/error-handling.md` - All error messages
+**Deployment Guides:**
+- `/docs/deployment/flyio-setup.md` - Fly.io setup, CLI, app deployment
+- `/docs/deployment/resend-setup.md` - Resend account, API keys, domain verification
+
+**Constraints:**
+- `/docs/constraints/non-functional.md` - Performance targets, availability
+- `/docs/constraints/technical-constraints.md` - Mobile-first, browser support
 
 ---
 
 ## 🎓 Known Gotchas
 
-### BR-023: Query Correctness is CRITICAL
-**Why:** Wrong filtering = approvers see wrong data or miss approvals.
-**Outstanding query:** `response = NoResponse AND status = Pending AND sorted LastActivityAt DESC`
-**History query:** `All statuses (Pending, Confirmed, Denied) AND sorted LastActivityAt DESC`
-**Common mistake:** Forgetting to filter by approver (each approver sees only their own items).
+### Rate Limiting Must Be Server-Side
+**Why:** Client-side rate limiting can be bypassed.
+**Solution:** Enforce all rate limits in backend before database operations (BR-012).
 
-### BR-024: Concurrency Tests Are Mandatory
-**Why:** Two approvers clicking at the same time WILL happen in production.
-**Solution:** Write Playwright tests that simulate concurrent clicks with `Promise.all()`.
+### Background Jobs Timezone
+**Why:** Jobs must run in Europe/Berlin timezone, not UTC.
+**Solution:** Use timezone-aware scheduler or convert UTC to Europe/Berlin.
 
-### BR-020: Link Detection Must Be Case-Insensitive
-**Why:** Users can type "HTTP://", "Www", "MAILTO:", etc.
-**Solution:** Use regex with `i` flag: `/http[s]?:\/\//i`, `/www\./i`, `/mailto:/i`
+### Lighthouse Performance vs Accessibility Tradeoff
+**Why:** Some accessibility features (ARIA, landmarks) add bytes, hurting performance.
+**Solution:** Both are mandatory - optimize bundle size with tree-shaking and code splitting.
 
-### Idempotency Edge Case (BR-010)
-**Why:** User clicks approve, network timeout, clicks again.
-**Solution:** Backend must return success on second click, not error.
+### SELECT FOR UPDATE Deadlocks
+**Why:** If two transactions both try to lock the same rows in different order, deadlock.
+**Solution:** Always lock in consistent order (e.g., always lock booking before approvals).
+
+### Email Retry Exponential Backoff
+**Why:** Immediate retries can overload email service.
+**Solution:** BR-022 specifies 2s, 4s, 8s delays - follow exactly.
 
 ---
 
@@ -246,21 +315,33 @@
 
 **To start Increment 4:**
 
-1. Verify Increments 2 and 3 complete (approval backend + frontend core exist)
-2. Start with US-7.1 (Approver Overview)
-   - Read phase-7-approver-interface.md
-   - Write Playwright tests for Outstanding/History tabs (BR-023 filtering)
-   - Implement tabs
-   - Verify tests pass
+1. Verify all increments 1-3 complete (all features implemented, tested)
+2. Start with US-8.1 (Performance)
+   - Run Lighthouse audits (baseline)
+   - Identify slow queries (add indexes, eager loading)
+   - Optimize bundle size (code splitting, lazy loading)
+   - Re-run Lighthouse (verify ≥90)
 
-3. Continue with US-7.2 (Approve)
-   - Write concurrency tests (BR-024)
-   - Implement approve action
-   - Verify idempotency (BR-010)
+3. Continue with US-8.2 (Accessibility)
+   - Run axe-core audits (identify violations)
+   - Add ARIA labels (all in German)
+   - Fix color contrast issues
+   - Test keyboard navigation
+   - Verify screen reader compatibility
+   - Re-run axe-core (verify 0 violations)
 
-4. Finish with US-7.3 (Deny)
-   - Write comment validation tests (BR-020)
-   - Implement deny dialog
-   - Verify link blocking works
+4. Finish with US-8.3 (Deployment)
+   - Set up Fly.io account + app
+   - Deploy backend (verify health check)
+   - Set up Resend account + domain
+   - Deploy frontend (verify preview URL)
+   - Configure rate limiting
+   - Schedule background jobs
+   - Run production smoke tests
+   - Launch 🚀
 
 **When starting, always read `/project/BACKLOG.md` first to confirm priority.**
+
+---
+
+**After Increment 4:** Production launch 🚀
