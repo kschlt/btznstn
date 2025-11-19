@@ -95,6 +95,63 @@ We discovered 17 issues in Phase 1 implementation because tests were written AFT
 
 ---
 
+### **Step 0: Check Architecture Decision Records (ADRs) - MANDATORY**
+
+**🎭 Role: Architect** - Verify architectural constraints before starting
+
+**⚠️ CRITICAL: ADRs are immutable constraints. You MUST NOT violate them.**
+
+**Before ANY implementation, read relevant ADRs:**
+
+1. **Identify applicable ADRs:**
+   - Backend work? → Read ADR-001 (FastAPI), ADR-003 (PostgreSQL/SQLAlchemy), ADR-006 (Type Safety), ADR-008 (Pytest)
+   - Frontend work? → Read ADR-002 (Next.js), ADR-005 (Shadcn/Tailwind), ADR-006 (TypeScript/Zod), ADR-008 (Playwright)
+   - Email work? → Read ADR-004 (Resend)
+   - Deployment work? → Read ADR-007 (Fly.io/Vercel)
+   - Testing work? → Read ADR-008 (Pytest/Playwright), ADR-009 (Test patterns)
+
+2. **Understand constraints:**
+   - What technology MUST be used?
+   - What patterns MUST be followed?
+   - What are the architectural boundaries?
+
+3. **Verify compliance:**
+   - Can you implement this feature within ADR constraints?
+   - Do you need a new technology/pattern not covered by ADRs?
+
+**If you need to deviate from an ADR:**
+```
+STOP! Do NOT implement.
+
+1. Document why the ADR doesn't work
+2. Propose superseding ADR to user
+3. Wait for approval
+4. Create new ADR
+5. THEN implement
+```
+
+**Where to find ADRs:**
+- All ADRs: `/docs/architecture/adr-*.md`
+- ADR guide: `/docs/architecture/CLAUDE.md`
+- ADR summary: `/docs/architecture/README.md`
+
+**Common ADR violations to avoid:**
+- ❌ Using Flask instead of FastAPI (violates ADR-001)
+- ❌ Using Next.js Pages Router instead of App Router (violates ADR-002)
+- ❌ Using Prisma instead of SQLAlchemy (violates ADR-003)
+- ❌ Using SendGrid instead of Resend (violates ADR-004)
+- ❌ Using Material UI instead of Shadcn/ui (violates ADR-005)
+- ❌ Skipping type validation (violates ADR-006)
+- ❌ Using Jest instead of Playwright (violates ADR-008)
+
+**Output of Step 0:**
+- [ ] Read all applicable ADRs
+- [ ] Understand architectural constraints
+- [ ] Confirm no ADR violations in planned implementation
+- [ ] If deviation needed, ADR proposal documented
+
+---
+
 ### **Step 1: Pre-Implementation Check (REQUIRED)**
 
 **🎭 Role: Requirements Analyst** - Gather ALL requirements comprehensively
