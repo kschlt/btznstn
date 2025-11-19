@@ -1,9 +1,24 @@
 # ADR-007: Deployment Strategy
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-015](adr-015-flyio-postgres-hosting.md), [ADR-016](adr-016-flyio-backend-hosting.md), [ADR-017](adr-017-vercel-frontend-hosting.md), [ADR-018](adr-018-github-actions-cicd.md)
 **Date:** 2025-01-17
+**Superseded:** 2025-01-19
 **Deciders:** Solution Architect
 **Context:** AI-driven development (Claude Code)
+
+---
+
+## Supersession Note
+
+This ADR bundled multiple independent architectural decisions:
+1. **Database hosting**: Fly.io Postgres → [ADR-015](adr-015-flyio-postgres-hosting.md) (also split from ADR-003)
+2. **Backend hosting**: Fly.io → [ADR-016](adr-016-flyio-backend-hosting.md)
+3. **Frontend hosting**: Vercel → [ADR-017](adr-017-vercel-frontend-hosting.md)
+4. **CI/CD**: GitHub Actions → [ADR-018](adr-018-github-actions-cicd.md)
+
+These decisions can now be superseded independently following the "One Decision Per ADR" principle.
+
+**Original decision content preserved below for historical reference.**
 
 ---
 
