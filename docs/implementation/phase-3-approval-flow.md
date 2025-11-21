@@ -71,17 +71,30 @@ Feature: Reopen Booking
 ```
 
 **Tasks:**
-- [ ] Implement approve endpoint (idempotent)
-- [ ] Implement deny endpoint (require comment)
-- [ ] Implement reopen endpoint
+- [ ] Create auth dependencies (`api/app/core/auth.py`) - See [ADR-019](../architecture/adr-019-authentication-authorization.md)
+- [ ] Implement approve endpoint (idempotent, approver-only)
+- [ ] Implement deny endpoint (require comment, approver-only)
+- [ ] Implement reopen endpoint (requester-only)
 - [ ] Check state transitions (Pending → Confirmed/Denied)
-- [ ] Handle first-action-wins (BR-024)
-- [ ] Add timeline events for all actions
+- [ ] Handle first-action-wins (BR-024) with SELECT FOR UPDATE
+- [ ] Add timeline events for all actions (Approved, Denied, Confirmed, Reopened)
+- [ ] Email notification stubs (implement in Phase 4)
 
 **Definition of Done:**
-- [ ] All approval scenarios pass
-- [ ] State machine works correctly
-- [ ] Timeline events logged
+- [ ] All approval scenarios pass (~36-43 tests)
+- [ ] State machine works correctly (Pending ↔ Confirmed/Denied/Canceled)
+- [ ] Timeline events logged (Approved + Confirmed for final approval)
 - [ ] Tests ≥85% coverage
+- [ ] Auth dependencies reusable (require_approver, require_requester)
+- [ ] German error messages from specification
+- [ ] BR-024 concurrency handled (lock Booking row)
+
+**Implementation Decisions (from US-3.1 analysis):**
+- **BR-024 Locking:** Lock Booking row only (not Approval row) with SELECT FOR UPDATE
+- **Timeline Events:** Log both "Approved" event (per approver) AND "Confirmed" event (when final)
+- **Confirmed Actor:** Use "Approver" (human action, not system)
+- **Email Notifications:** Stub method in service (`_send_approval_notifications`), implement in Phase 4
+- **Auth Pattern:** FastAPI dependencies (see [ADR-019](../architecture/adr-019-authentication-authorization.md))
+- **Error Handling:** Keep ValueError → HTTPException pattern from Phase 2
 
 **Next:** [Phase 4: Email Integration](phase-4-email-integration.md)

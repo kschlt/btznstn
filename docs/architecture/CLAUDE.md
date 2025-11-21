@@ -199,89 +199,99 @@ Ask yourself:
 
 ### Step 2: Use ADR Template
 
+**⚠️ CRITICAL: Keep ADRs concise (150-300 lines max). Focus on DECISION, not implementation.**
+
 **File naming:** `adr-{number}-{title}.md`
-- Number: Next available (currently ADR-012)
+- Number: Next available
 - Title: Kebab-case, descriptive
+
+**Strict Length Guidelines:**
+- **Target:** 150-250 lines
+- **Maximum:** 300 lines
+- **If longer:** Split into multiple ADRs or move details elsewhere
+
+**What to include:**
+- ✅ Context (brief - why we need this decision)
+- ✅ Decision (clear statement of choice)
+- ✅ Rationale (why this vs alternatives)
+- ✅ Consequences (positive/negative/neutral)
+- ✅ Minimal implementation pattern (1-2 code examples max)
+- ✅ References (links to related docs)
+
+**What to exclude:**
+- ❌ Detailed implementation guides (put in `/docs/design/` or `/docs/implementation/`)
+- ❌ Multiple code examples for every scenario
+- ❌ Testing strategies (put in implementation docs)
+- ❌ Step-by-step tutorials
+- ❌ "Summary for AI agents" sections (use CLAUDE.md instead)
 
 **Template:**
 ```markdown
 # ADR-{number}: {Title}
 
-**Status:** Proposed | Accepted | Superseded | Deprecated
+**Status:** Accepted
 **Date:** YYYY-MM-DD
-**Deciders:** {Who made this decision}
-**Context:** {What triggered this decision}
-**Supersedes:** ADR-XXX (if applicable)
+**Deciders:** Solution Architect
+**Context:** {Brief trigger}
 
 ---
 
 ## Context
 
-{Describe the situation requiring a decision. Include:}
-- What problem are we solving?
-- What requirements drive this?
-- What constraints exist?
-
-### Requirements from Specifications
-
-{Reference relevant BRs, user stories, constraints}
+{2-4 paragraphs: problem, requirements, constraints}
 
 ---
 
 ## Decision
 
-{State the decision clearly and concisely}
+{1-2 paragraphs: clear statement of choice}
 
 ---
 
 ## Rationale
 
-{Explain WHY this decision makes sense. Include:}
-1. How it solves the problem
-2. Why it's better than alternatives
-3. How it aligns with project goals (AI-first, type safety, etc.)
+### Why {Chosen Option} vs {Alternative}?
 
-### Alternatives Considered
+**{Chosen Option}:**
+- ✅ Pro 1
+- ✅ Pro 2
 
-{List alternatives and why they were rejected}
+**{Alternative} (Rejected):**
+- ❌ Con 1
+- ❌ Con 2
 
-| Alternative | Pros | Cons | Why Rejected |
-|-------------|------|------|--------------|
-| Option A    | ... | ... | ... |
-| Option B    | ... | ... | ... |
+{Repeat for 2-3 key alternatives}
 
 ---
 
 ## Consequences
 
-**Positive:**
-- {List benefits}
+### Positive
+✅ Benefit 1
+✅ Benefit 2
 
-**Negative:**
-- {List drawbacks}
+### Negative
+⚠️ Drawback 1
 
-**Neutral:**
-- {List trade-offs}
+### Neutral
+➡️ Trade-off 1
 
 ---
 
 ## Implementation Notes
 
-{How to implement this decision:}
-- Key patterns to follow
-- Files/folders affected
-- Migration steps (if superseding)
+{1-2 minimal code examples showing the pattern}
 
 ---
 
 ## References
 
-{Links to:}
-- Related ADRs
-- External documentation
-- Business rules
-- Specifications
+**Related ADRs:** ADR-XXX
+**Business Rules:** BR-XXX
+**Implementation:** {file paths}
 ```
+
+**Example of good ADR:** ADR-010 (DateTime/Timezone) - 246 lines, focused
 
 ### Step 3: Propose to User
 
@@ -456,6 +466,124 @@ Browser → Vercel (Next.js) → Fly.io (FastAPI) → Fly.io Postgres
 
 ---
 
+## 🔐 Authentication & Authorization Pattern (ADR-019)
+
+**⚠️ CRITICAL: Always use the established auth pattern. Never implement custom token validation or authorization logic.**
+
+### Where to Find Auth Components
+
+**Token utilities** (already implemented):
+- **Location:** [`api/app/core/tokens.py`](../../api/app/core/tokens.py:1)
+- **Functions:**
+  - `generate_token(payload)` - Create HMAC-SHA256 signed token
+  - `verify_token(token)` - Validate signature, extract payload
+- **Use when:** Generating tokens for emails, validating tokens manually
+
+**Auth dependencies** (Phase 3+):
+- **Location:** [`api/app/core/auth.py`](../../api/app/core/auth.py:1)
+- **Dependencies:**
+  - `get_current_token` - Validates token, extracts payload
+  - `require_approver` - Ensures approver role
+  - `require_requester` - Ensures requester role
+- **Use when:** Implementing authenticated endpoints
+
+### How to Use Auth in Endpoints
+
+**Pattern (from ADR-019):**
+
+```python
+from typing import Annotated
+from fastapi import APIRouter, Depends
+from app.core.auth import require_approver, TokenPayload
+
+@router.post("/api/v1/bookings/{id}/approve")
+async def approve_booking(
+    id: UUID,
+    token_data: Annotated[TokenPayload, Depends(require_approver)],
+    db: AsyncSession = Depends(get_db),
+) -> ApprovalResponse:
+    """Approve a booking (Approver only)."""
+    service = BookingService(db)
+    return await service.approve_booking(
+        booking_id=id,
+        approver_party=token_data.party,  # Already validated
+    )
+```
+
+**Key points:**
+- ✅ Token validation automatic (handled by dependency)
+- ✅ Role check automatic (handled by dependency)
+- ✅ Type-safe (`token_data.party` is `AffiliationEnum`)
+- ✅ German error messages (401/403) from specification
+
+### Common Mistakes to Avoid
+
+❌ **Don't:** Manually validate tokens in endpoints
+```python
+# WRONG
+token = request.query_params.get("token")
+payload = verify_token(token)
+if not payload:
+    raise HTTPException(401, "Invalid token")
+```
+
+✅ **Do:** Use auth dependencies
+```python
+# CORRECT
+token_data: Annotated[TokenPayload, Depends(require_approver)]
+```
+
+---
+
+❌ **Don't:** Implement custom role checks
+```python
+# WRONG
+if token_data.role != "approver":
+    raise HTTPException(403, "Not allowed")
+```
+
+✅ **Do:** Use role-specific dependencies
+```python
+# CORRECT
+token_data: Annotated[TokenPayload, Depends(require_approver)]
+```
+
+---
+
+❌ **Don't:** Put tokens in headers
+```python
+# WRONG - Not email-friendly
+Authorization: Bearer xxx
+```
+
+✅ **Do:** Use query parameter
+```python
+# CORRECT - Works in email links
+GET /api/v1/bookings/{id}/approve?token=xxx
+```
+
+### Quick Reference
+
+**Read this ADR for full details:** [ADR-019: Authentication & Authorization](adr-019-authentication-authorization.md)
+
+**Token structure:**
+```python
+{
+  "email": "user@example.com",
+  "role": "requester" | "approver",
+  "booking_id": "uuid",  # Optional
+  "party": "Ingeborg" | "Cornelia" | "Angelika",  # For approvers
+  "iat": 1234567890  # Issued-at timestamp
+}
+```
+
+**Error messages (German, from specification):**
+- Invalid token: `"Ungültiger Zugangslink."` (401)
+- Wrong role: `"Diese Aktion ist für deine Rolle nicht verfügbar."` (403)
+- No access: `"Du hast keinen Zugriff auf diesen Eintrag."` (403)
+
+---
+
 ## Summary: ADRs are Law
 
 **Critical reminders:**
@@ -464,6 +592,7 @@ Browser → Vercel (Next.js) → Fly.io (FastAPI) → Fly.io Postgres
 3. ⚠️ **Never alter an accepted ADR**
 4. ⚠️ **Supersede with new ADR if needed**
 5. ⚠️ **Propose before creating new ADR**
+6. ⚠️ **Always use auth pattern from ADR-019**
 
 **If you violate an ADR, the implementation is wrong. Full stop.**
 

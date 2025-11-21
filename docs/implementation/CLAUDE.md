@@ -780,6 +780,52 @@ Feature: [Feature Name]
 
 ## Phase-Specific Critical Implementation Guidance
 
+### Phase 3+: Authentication & Authorization - ALWAYS USE PATTERN
+
+**🔐 CRITICAL: Never implement custom auth logic. Always use established pattern.**
+
+**Read this ADR:** [ADR-019: Authentication & Authorization](../architecture/adr-019-authentication-authorization.md)
+
+**Quick Reference:**
+
+**Token utilities** (already exist):
+- **Location:** [`api/app/core/tokens.py`](../../api/app/core/tokens.py:1)
+- **Functions:** `generate_token(payload)`, `verify_token(token)`
+
+**Auth dependencies** (create in Phase 3):
+- **Location:** [`api/app/core/auth.py`](../../api/app/core/auth.py:1)
+- **Dependencies:** `get_current_token`, `require_approver`, `require_requester`
+
+**Pattern for authenticated endpoints:**
+```python
+from typing import Annotated
+from fastapi import Depends
+from app.core.auth import require_approver, TokenPayload
+
+@router.post("/api/v1/bookings/{id}/approve")
+async def approve_booking(
+    id: UUID,
+    token_data: Annotated[TokenPayload, Depends(require_approver)],
+    db: AsyncSession = Depends(get_db),
+):
+    """Approve booking (approver-only)."""
+    # Auth already validated by dependency
+    # Use token_data.email, token_data.party directly
+    service = BookingService(db)
+    return await service.approve_booking(id, token_data.party)
+```
+
+**Never:**
+- ❌ Manually validate tokens in endpoints
+- ❌ Implement custom role checks
+- ❌ Put tokens in headers (use query param `?token=xxx`)
+
+**German error messages** (from spec):
+- Invalid token: `"Ungültiger Zugangslink."` (401)
+- Wrong role: `"Diese Aktion ist für deine Rolle nicht verfügbar."` (403)
+
+---
+
 ### Phase 6: Web Booking Forms - Critical Gotchas
 
 **Test Matrices Available:**

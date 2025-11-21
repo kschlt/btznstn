@@ -107,6 +107,7 @@ ADRs document significant architectural decisions with context, rationale, and c
 - [ADR-016: Fly.io Backend Hosting](adr-016-flyio-backend-hosting.md) - Backend hosting
 - [ADR-017: Vercel Frontend Hosting](adr-017-vercel-frontend-hosting.md) - Frontend hosting
 - [ADR-018: GitHub Actions CI/CD](adr-018-github-actions-cicd.md) - CI/CD automation
+- [ADR-019: Authentication & Authorization](adr-019-authentication-authorization.md) - Token-based auth + FastAPI dependencies
 
 ---
 
