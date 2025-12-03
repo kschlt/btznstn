@@ -11,11 +11,10 @@
 ## Context
 
 Need CI/CD platform to automate:
-- Run tests automatically on every commit
+- Run tests automatically on commits/PRs
 - Run type checks (mypy, TypeScript)
 - Run linters (ruff, ESLint)
-- Deploy backend to Fly.io on merge to main
-- Deploy frontend to Vercel (handled by Vercel)
+- Deploy applications (deployment strategy decided separately)
 - AI-friendly (YAML syntax, clear patterns)
 - Integrated with GitHub
 - Budget-friendly (free for private repos)
@@ -28,136 +27,63 @@ Use **GitHub Actions** for CI/CD automation.
 
 ---
 
-## Rationale
+## Quick Reference
 
-### Why GitHub Actions vs GitLab CI vs CircleCI vs Jenkins?
-
-**GitHub Actions (Chosen):**
-- ✅ **Same platform** - Code + CI/CD in GitHub (no external accounts)
-- ✅ **Tight integration** - PR status checks, merge protection
-- ✅ **Free tier** - 2,000 minutes/month (private repos), unlimited (public)
-- ✅ **YAML syntax** - AI-friendly, clear structure
-- ✅ **Marketplace** - Reusable actions (Fly.io, Codecov, etc.)
-- ✅ **Secrets management** - Encrypted, scoped, masked in logs
-
-**GitLab CI (Rejected):**
-- ❌ Different platform (code on GitHub, CI on GitLab)
-- ❌ Extra account needed
-
-**CircleCI (Rejected):**
-- ❌ Separate platform
-- ❌ Less generous free tier
-
-**Jenkins (Rejected):**
-- ❌ Self-hosted (must run server)
-- ❌ Complex setup
-- ❌ Manual operations
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| CI/CD Platform | GitHub Actions | GitLab CI, CircleCI, Jenkins |
+| Workflow Syntax | YAML files in `.github/workflows/` | External CI/CD config |
+| Integration | GitHub PR status checks | External CI/CD platforms |
+| Secrets Management | GitHub Secrets (encrypted, masked) | Hardcoded secrets, unencrypted |
+| Free Tier | 2,000 minutes/month (private repos) | Paid CI/CD platforms |
 
 ---
 
-## Key Benefits
+## Rationale
 
-### 1. GitHub Integration (Same Platform)
+**Why GitHub Actions:**
+- GitHub Actions integrates with GitHub (same platform) → **Constraint:** MUST use GitHub Actions for CI/CD (no external accounts, tight integration)
+- GitHub Actions provides PR status checks → **Constraint:** MUST use GitHub Actions for merge protection (tests must pass before merge)
+- GitHub Actions uses YAML syntax → **Constraint:** MUST use YAML workflow files in `.github/workflows/` (AI-friendly, clear structure)
+- GitHub Actions provides encrypted secrets → **Constraint:** MUST use GitHub Secrets for sensitive data (encrypted, scoped, masked in logs)
 
-**PR status checks:**
-```
-PR #123: Add booking feature
-✅ Tests (74 passed)
-✅ Type check (mypy)
-✅ Lint (ruff)
-→ Merge button enabled
-```
+**Why NOT GitLab CI:**
+- GitLab CI requires different platform → **Violation:** Code on GitHub, CI on GitLab violates same-platform requirement, extra account needed
 
-One platform to manage.
+**Why NOT CircleCI:**
+- CircleCI is separate platform → **Violation:** Separate platform violates integration requirement, less generous free tier
 
-### 2. YAML Syntax (AI-Friendly)
-
-```yaml
-# .github/workflows/test-backend.yml
-name: Test Backend
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-      - run: pip install -r requirements.txt
-      - run: pytest
-      - run: mypy src/
-      - run: ruff check src/
-```
-
-Clear structure. AI can generate workflows.
-
-### 3. Marketplace Actions (Reusable)
-
-```yaml
-# Deploy to Fly.io
-- uses: superfly/flyctl-actions/setup-flyctl@master
-- run: flyctl deploy --remote-only
-  env:
-    FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-```
-
-Reuse proven actions.
-
-### 4. Branch Protection (Enforce Quality)
-
-**Required status checks:**
-- `test-backend`
-- `test-frontend`
-- `type-check`
-- `lint`
-
-Merge button disabled until all pass. AI can't merge broken code.
+**Why NOT Jenkins:**
+- Jenkins requires self-hosting → **Violation:** Self-hosted server violates simplicity requirement, complex setup, manual operations
 
 ---
 
 ## Consequences
 
-### Positive
+### MUST (Required)
 
-✅ **Integrated** - Same platform as code
-✅ **Free tier** - 2,000 minutes/month sufficient
-✅ **YAML syntax** - AI-friendly
-✅ **Marketplace** - Reusable actions
-✅ **Secrets management** - Encrypted, masked
-✅ **Branch protection** - Enforce tests before merge
-✅ **PR status checks** - Clear pass/fail
+- MUST use GitHub Actions for CI/CD automation - Same platform as code, tight integration with GitHub
+- MUST use YAML workflow files in `.github/workflows/` - AI-friendly syntax, clear structure
+- MUST use GitHub Secrets for sensitive data (API keys, tokens) - Encrypted, scoped, masked in logs
+- MUST use PR status checks for merge protection - Tests must pass before merge, prevents broken code
+- MUST use marketplace actions for common tasks - Reusable, proven actions (deployment targets decided in other ADRs)
 
-### Negative
+### MUST NOT (Forbidden)
 
-⚠️ **GitHub-specific** - YAML not portable
-⚠️ **Free tier limits** - 2,000 minutes/month (sufficient, but monitor)
-⚠️ **Slower** - Shared runners vs dedicated CI server
+- MUST NOT use GitLab CI, CircleCI, or Jenkins - Violates same-platform requirement, adds complexity
+- MUST NOT hardcode secrets in workflow files - Violates security requirement, secrets exposed in logs
+- MUST NOT skip PR status checks - Violates quality requirement, allows broken code to merge
 
-### Neutral
+### Trade-offs
 
-➡️ **YAML complexity** - Large workflows verbose (but AI handles this)
-➡️ **Debugging** - Must debug via logs (can't SSH into runner)
+- GitHub-specific YAML - MUST use GitHub Actions. MUST NOT use other CI/CD platforms. YAML not portable, but integration worth it.
+- Free tier limits - MUST use free tier initially. MUST NOT exceed 2,000 minutes/month without upgrading. Monitor usage before scaling.
+- Shared runners slower than dedicated - MUST use GitHub Actions shared runners. MUST NOT assume dedicated CI server performance. Sufficient for small projects.
 
----
-
-## Implementation Pattern
-
-### Workflow Structure
-
-```
-.github/
-└── workflows/
-    ├── test-backend.yml      # Backend tests + lint + type-check
-    ├── test-frontend.yml     # Frontend tests + lint + type-check
-    └── deploy-backend.yml    # Deploy to Fly.io (on push to main)
-```
-
-### Backend Test Workflow
+### Code Examples
 
 ```yaml
+# ✅ CORRECT: Backend test workflow
 # .github/workflows/test-backend.yml
 name: Test Backend
 
@@ -172,7 +98,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:15
@@ -180,87 +105,74 @@ jobs:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
           POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-
     defaults:
       run:
         working-directory: ./api
-
     steps:
       - uses: actions/checkout@v3
-
       - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run type checker
-        run: mypy src/
-
-      - name: Run linter
-        run: ruff check src/
-
-      - name: Run tests
-        run: pytest --cov=app
+      - run: pip install -r requirements.txt
+      - run: mypy app/
+      - run: ruff check app/
+      - run: pytest
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
 ```
 
-### Backend Deploy Workflow
-
 ```yaml
+# ✅ CORRECT: Deploy workflow using secrets (branch strategy decided separately)
 # .github/workflows/deploy-backend.yml
 name: Deploy Backend
-
 on:
   push:
-    branches: [main]
+    branches: [main]  # Branch strategy may change - not part of this ADR
     paths:
       - 'api/**'
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
-
       - uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Deploy to Fly.io
-        run: flyctl deploy --remote-only
+      - run: flyctl deploy --remote-only
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}  # ✅ Secret from GitHub Secrets
 ```
 
-### Set Secrets
+```yaml
+# ❌ WRONG: Hardcoded secret
+env:
+  FLY_API_TOKEN: "hardcoded-token-here"  # ❌ Secret exposed in logs!
+```
 
-**Via GitHub UI:**
-1. Settings → Secrets and variables → Actions
-2. Add secrets:
-   - `FLY_API_TOKEN` (get via `fly auth token`)
+### Applies To
 
-### Branch Protection
+- ALL CI/CD automation (all phases)
+- File patterns: `.github/workflows/*.yml`
+- Test automation (all phases)
+- Deployment automation (deployment targets and strategies decided in other ADRs)
 
-**Enable on `main`:**
-1. Settings → Branches
-2. Add rule for `main`:
-   - ✅ Require status checks
-   - Required: `test-backend / test`, `test-frontend / test`
+### Validation Commands
+
+- `grep -r "secrets\." .github/workflows/` (should use secrets, not hardcoded values)
+- `grep -r "FLY_API_TOKEN\|DATABASE_URL" .github/workflows/` (should use `${{ secrets.NAME }}` format)
+- `grep -r "on:" .github/workflows/` (should have trigger events defined)
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-008: Testing Strategy (tests run in CI)
-- ADR-016: Fly.io Backend Hosting (deploy target)
-- ADR-017: Vercel Frontend Hosting (deploy target)
-- ADR-006: Type Safety Strategy (type checks in CI)
+- [ADR-006](adr-006-type-safety.md) - Type Safety Strategy (type checks in CI)
+- [ADR-015](adr-015-flyio-backend-hosting.md) - Fly.io Backend Hosting (deploy target)
+- [ADR-017](adr-017-vercel-frontend-hosting.md) - Vercel Frontend Hosting (deploy target)
+- [ADR-020](adr-020-backend-testing-framework.md) - Backend Testing Framework (tests run in CI)
 
 **Tools:**
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Fly.io GitHub Actions](https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/)
+
+**Implementation:**
+- `.github/workflows/` - GitHub Actions workflow files

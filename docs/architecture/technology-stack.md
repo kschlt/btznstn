@@ -132,7 +132,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - pytest-asyncio (async tests)
   - pytest-cov (code coverage)
 - **Documentation:** https://docs.pytest.org/
-- **ADR:** [ADR-008: Testing Strategy](adr-008-testing-strategy.md)
+- **ADR:** [ADR-008: Testing Strategy](adr-008-testing-strategy-SUPERSEDED.md) - **SUPERSEDED**
 
 **Coverage.py**
 - **Purpose:** Code coverage tracking
@@ -275,7 +275,7 @@ This document provides a complete reference of all technologies, frameworks, lib
 - **Browsers:** Chromium, Firefox, WebKit
 - **Devices:** Desktop + iPhone 8
 - **Documentation:** https://playwright.dev/
-- **ADR:** [ADR-008: Testing Strategy](adr-008-testing-strategy.md)
+- **ADR:** [ADR-008: Testing Strategy](adr-008-testing-strategy-SUPERSEDED.md) - **SUPERSEDED**
 
 **Axe-core**
 - **Version:** Latest (via @axe-core/playwright)
@@ -324,7 +324,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - Private networking (`.internal`)
 - **Free Tier:** 3 shared-cpu VMs, 3GB storage
 - **Documentation:** https://fly.io/docs/
-- **ADR:** [ADR-016: Fly.io Backend Hosting](adr-016-flyio-backend-hosting.md)
+- **ADR:** [ADR-015: Fly.io Backend Hosting](adr-015-flyio-backend-hosting.md)
 
 ### Database Hosting
 
@@ -340,7 +340,7 @@ This document provides a complete reference of all technologies, frameworks, lib
   - Always on (no shutdown/pause)
 - **Free Tier:** 3GB storage (included in Fly.io free tier)
 - **Documentation:** https://fly.io/docs/postgres/
-- **ADR:** [ADR-015: Fly.io Postgres Hosting](adr-015-flyio-postgres-hosting.md)
+- **ADR:** [ADR-016: Fly.io Postgres Hosting](adr-016-flyio-postgres-hosting.md)
 
 ### Web Hosting
 
@@ -617,20 +617,20 @@ npm install  # Local development
 - [Architecture Overview](README.md)
 - [ADR-001: API Framework](adr-001-backend-framework.md)
 - [ADR-002: Web Framework](adr-002-frontend-framework.md)
-- [ADR-003: Database & ORM](adr-003-database-orm.md) - **SUPERSEDED** (split into 012-015)
+- [ADR-003: Database & ORM](adr-003-database-orm-SUPERSEDED.md) - **SUPERSEDED** (split into 012-016)
 - [ADR-004: Email Service](adr-004-email-service.md)
 - [ADR-005: UI Framework](adr-005-ui-framework.md)
 - [ADR-006: Type Safety Strategy](adr-006-type-safety.md)
-- [ADR-007: Deployment Strategy](adr-007-deployment.md) - **SUPERSEDED** (split into 015-018)
-- [ADR-008: Testing Strategy](adr-008-testing-strategy.md)
-- [ADR-009: Test Patterns](adr-009-test-patterns.md)
+- [ADR-007: Deployment Strategy](adr-007-deployment-SUPERSEDED.md) - **SUPERSEDED** (split into 015-018)
+- [ADR-008: Testing Strategy](adr-008-testing-strategy-SUPERSEDED.md) - **SUPERSEDED** (split into 020-021)
+- [ADR-009: Test Data Factory Functions](adr-009-test-data-factory-functions.md)
 - [ADR-010: DateTime & Timezone](adr-010-datetime-timezone.md)
 - [ADR-011: CORS Security Policy](adr-011-cors-security-policy.md)
 - [ADR-012: PostgreSQL Database](adr-012-postgresql-database.md)
 - [ADR-013: SQLAlchemy ORM](adr-013-sqlalchemy-orm.md)
 - [ADR-014: Alembic Migrations](adr-014-alembic-migrations.md)
-- [ADR-015: Fly.io Postgres Hosting](adr-015-flyio-postgres-hosting.md)
-- [ADR-016: Fly.io Backend Hosting](adr-016-flyio-backend-hosting.md)
+- [ADR-015: Fly.io Backend Hosting](adr-015-flyio-backend-hosting.md)
+- [ADR-016: Fly.io Postgres Hosting](adr-016-flyio-postgres-hosting.md)
 - [ADR-017: Vercel Frontend Hosting](adr-017-vercel-frontend-hosting.md)
 - [ADR-018: GitHub Actions CI/CD](adr-018-github-actions-cicd.md)
 

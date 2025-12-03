@@ -25,88 +25,75 @@ Use **Resend** as the email service provider.
 
 ---
 
+## Quick Reference
+
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| Email Service | Resend API | SendGrid, Mailgun, AWS SES |
+| API Pattern | `resend.Emails.send()` | Complex marketing APIs |
+| API Key | Resend API key from config | Hardcoded keys |
+| SDK | Resend Python SDK | Direct HTTP calls |
+
+---
+
 ## Rationale
 
-### Why Resend vs SendGrid vs Mailgun?
+**Why Resend:**
+- Resend provides simple API (`resend.Emails.send()`) → **Constraint:** MUST use Resend API (not SendGrid/Mailgun)
+- Resend built for developers → **Constraint:** MUST use simple API pattern (no marketing-focused complexity)
+- Resend free tier covers our volume → **Constraint:** MUST use Resend free tier (100 emails/day)
 
-**Resend (Chosen):**
-- ✅ **Simple API** - `resend.emails.send()` - easy for AI
-- ✅ **Modern DX** - Built for developers, not marketing teams
-- ✅ **Free tier** - 100 emails/day (enough for us)
-- ✅ **React Email support** - Can use JSX for templates (optional)
-- ✅ **Fast delivery** - Good reputation
-
-**SendGrid (Rejected):**
-- ❌ Complex API (marketing-focused)
-- ❌ Cluttered UI (campaigns, analytics overkill)
-- ❌ More expensive for simple use case
-
-**Mailgun (Rejected):**
-- ❌ More expensive ($35/month minimum)
-- ❌ Less modern API
+**Why NOT SendGrid:**
+- SendGrid uses complex marketing-focused API → **Violation:** Complex API violates simplicity requirement and increases implementation complexity
+- SendGrid requires more expensive plans → **Violation:** Higher cost violates free tier requirement
 
 ---
 
 ## Consequences
 
-### Positive
+### MUST (Required)
 
-✅ **Simple integration** - 5 lines of Python code
-✅ **Free for our volume** - 100 emails/day, 3000/month
-✅ **Good deliverability** - High reputation
-✅ **Developer-friendly** - No marketing bloat
+- MUST use Resend API (`resend.Emails.send()`) - Resend's simple API pattern, developer-friendly
+- MUST use Resend Python SDK - Official SDK provides proper error handling and type safety
+- MUST configure Resend API key via environment variable - API key must come from configuration, not hardcoded
 
-### Negative
+### MUST NOT (Forbidden)
 
-⚠️ **Newer service** - Less mature than SendGrid/Mailgun (founded 2022)
-⚠️ **Vendor lock-in** - API not standard (but simple to migrate)
+- MUST NOT use SendGrid/Mailgun/AWS SES - Violates Resend decision
+- MUST NOT make direct HTTP calls to Resend API - Must use official Python SDK
+- MUST NOT hardcode API keys - Must use configuration management
 
-### Neutral
+### Trade-offs
 
-➡️ **No EU region** - Servers in US (acceptable for email)
+- Newer service - Resend is less mature than SendGrid/Mailgun (founded 2022). Mitigation: Simple API reduces risk, easy to migrate if needed.
+- Vendor lock-in - API not standard. Mitigation: Simple API makes migration straightforward if needed.
 
----
+### Applies To
 
-## Implementation Pattern
+- ALL email service implementation (Phase 4, 5, 6, 7, 8)
+- File patterns: `app/services/email_service.py`
+- Email service configuration: `app/core/config.py`
 
-### Send Email
+### Validation Commands
 
-```python
-import resend
-from app.core.config import settings
+- `grep -r "sendgrid\|mailgun\|ses" app/` (should be empty - must use Resend)
+- `grep -r "resend.Emails.send\|from resend" app/services/` (should be present)
+- `grep -r "RESEND_API_KEY" app/core/config.py` (should be present)
 
-resend.api_key = settings.resend_api_key
-
-def send_approval_email(to: str, approver_name: str, booking_id: str):
-    """Send approval notification email."""
-    resend.Emails.send({
-        "from": "Betzenstein <noreply@betzenstein.app>",
-        "to": to,
-        "subject": f"{approver_name} hat zugestimmt",
-        "html": "<p>...</p>",  # German template
-    })
-```
-
-### Configuration
-
-```bash
-# .env
-RESEND_API_KEY=re_xxx
-```
+**Related ADRs:**
+- [ADR-001](adr-001-backend-framework.md) - Backend Framework (FastAPI + Resend integration)
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-001: Backend Framework (FastAPI + Resend integration)
-
-**Business Rules:**
-- BR-022: Email retry logic (3 attempts, exponential backoff)
+- [ADR-001](adr-001-backend-framework.md) - Backend Framework (FastAPI + Resend integration)
 
 **Tools:**
 - [Resend](https://resend.com/)
 - [Resend Python SDK](https://github.com/resend/resend-python)
 
-**Templates:**
-- [`docs/specification/notifications.md`](../../docs/specification/notifications.md) - All 11 German templates
+**Implementation:**
+- `app/services/email_service.py` - Email service implementation
+- `app/core/config.py` - Resend API key configuration

@@ -389,8 +389,8 @@ Before deploying to production:
 ## Related Documentation
 
 - [Technology Stack](../architecture/technology-stack.md)
-- [ADR-015: Fly.io Postgres Hosting](../architecture/adr-015-flyio-postgres-hosting.md)
-- [ADR-016: Fly.io Backend Hosting](../architecture/adr-016-flyio-backend-hosting.md)
+- [ADR-015: Fly.io Backend Hosting](../architecture/adr-015-flyio-backend-hosting.md)
+- [ADR-016: Fly.io Postgres Hosting](../architecture/adr-016-flyio-postgres-hosting.md)
 - [Phase 8: Polish & Production](../implementation/phase-8-polish.md)
 
 ---

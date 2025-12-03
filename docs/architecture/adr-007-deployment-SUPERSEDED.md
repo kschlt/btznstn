@@ -1,6 +1,6 @@
 # ADR-007: Deployment Strategy
 
-**Status:** Superseded by [ADR-015](adr-015-flyio-postgres-hosting.md), [ADR-016](adr-016-flyio-backend-hosting.md), [ADR-017](adr-017-vercel-frontend-hosting.md), [ADR-018](adr-018-github-actions-cicd.md)
+**Status:** Superseded by [ADR-015](adr-015-flyio-backend-hosting.md), [ADR-016](adr-016-flyio-postgres-hosting.md), [ADR-017](adr-017-vercel-frontend-hosting.md), [ADR-018](adr-018-github-actions-cicd.md)
 **Date:** 2025-01-17
 **Superseded:** 2025-01-19
 **Deciders:** Solution Architect
@@ -11,8 +11,8 @@
 ## Supersession Note
 
 This ADR bundled multiple independent architectural decisions:
-1. **Database hosting**: Fly.io Postgres → [ADR-015](adr-015-flyio-postgres-hosting.md) (also split from ADR-003)
-2. **Backend hosting**: Fly.io → [ADR-016](adr-016-flyio-backend-hosting.md)
+1. **Backend hosting**: Fly.io → [ADR-015](adr-015-flyio-backend-hosting.md)
+2. **Database hosting**: Fly.io Postgres → [ADR-016](adr-016-flyio-postgres-hosting.md) (also split from ADR-003)
 3. **Frontend hosting**: Vercel → [ADR-017](adr-017-vercel-frontend-hosting.md)
 4. **CI/CD**: GitHub Actions → [ADR-018](adr-018-github-actions-cicd.md)
 
@@ -993,8 +993,8 @@ psql $DATABASE_URL -c "SELECT COUNT(*) FROM bookings;"
 
 - [ADR-001: API Framework](adr-001-backend-framework.md) - FastAPI deployment considerations
 - [ADR-002: Web Framework](adr-002-frontend-framework.md) - Next.js deployment on Vercel
-- [ADR-003: Database & ORM](adr-003-database-orm.md) - Railway PostgreSQL + Alembic migrations
-- [ADR-008: Testing Strategy](adr-008-testing-strategy.md) - CI/CD test execution
+- [ADR-003: Database & ORM](adr-003-database-orm-SUPERSEDED.md) - Railway PostgreSQL + Alembic migrations
+- [ADR-008: Testing Strategy](adr-008-testing-strategy-SUPERSEDED.md) - CI/CD test execution
 
 ---
 

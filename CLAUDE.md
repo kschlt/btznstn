@@ -97,7 +97,7 @@ This project uses a **layered documentation approach**:
     │   ├── CLAUDE.md                  # Architecture-specific guidance
     │   ├── README.md
     │   ├── technology-stack.md
-    │   └── adr-00X-*.md               # 8 ADRs
+    │   └── adr-001-*.md through adr-019-*.md  # Architecture Decision Records (numbered sequentially)
     │
     ├── /design/                       # Detailed design
     │   ├── CLAUDE.md                  # Design-specific guidance
@@ -110,7 +110,7 @@ This project uses a **layered documentation approach**:
     └── /implementation/               # BDD roadmap
         ├── CLAUDE.md                  # Implementation-specific guidance
         ├── README.md                  # 8-phase BDD plan
-        └── phase-X-*.md               # Phase-by-phase details
+        └── phase-0-*.md through phase-8-*.md  # Phase-by-phase details (numbered 0 to 8)
 ```
 
 ---
@@ -132,7 +132,7 @@ This project uses a **layered documentation approach**:
 **Follow the BDD roadmap:**
 1. [`docs/implementation/README.md`](docs/implementation/README.md) - Overview and approach
 2. [`docs/implementation/phase-0-foundation.md`](docs/implementation/phase-0-foundation.md) - Start here
-3. Continue through phases 1-8 sequentially
+3. Continue through phases sequentially: phase-1, phase-2, phase-3, phase-4, phase-5, phase-6, phase-7, phase-8 (in numerical order)
 
 **Each phase includes:**
 - User stories
@@ -157,15 +157,15 @@ This project uses a **layered documentation approach**:
 
 **ALWAYS reference business rules** from [`docs/foundation/business-rules.md`](docs/foundation/business-rules.md)
 
-**Most critical:**
-- **BR-001:** Inclusive end date (`TotalDays = End - Start + 1`)
-- **BR-002:** No overlaps with Pending/Confirmed bookings
-- **BR-003:** Three fixed approvers required
-- **BR-004:** Denial is non-blocking, not public
-- **BR-005:** Date edits logged; shorten keeps approvals, extend resets
-- **BR-015:** Self-approval if requester is approver
-- **BR-024:** First-action-wins for concurrent approvals/denials
-- **BR-029:** First-write-wins for create/extend operations
+**Most critical (read full text in business-rules.md for complete details):**
+- **BR-001:** Inclusive end date calculation (`TotalDays = EndDate - StartDate + 1`). Example: Jan 1 to Jan 3 = 3 days (not 2).
+- **BR-002:** No date overlaps allowed with bookings in Pending or Confirmed states. Denied/Canceled bookings do not block dates.
+- **BR-003:** Exactly three fixed approvers required: Ingeborg, Cornelia, Angelika (first names only, case-sensitive).
+- **BR-004:** Denial does not block dates (frees them immediately). Denied bookings are not visible to public (only requester sees them).
+- **BR-005:** Date edits are logged. Shortening dates keeps existing approvals. Extending dates resets all approvals to pending.
+- **BR-015:** If requester is also an approver, that approver's approval is automatically granted (self-approval).
+- **BR-024:** When multiple approvals/denials happen concurrently, the first one processed wins (race condition handling).
+- **BR-029:** When multiple create/extend operations happen concurrently, the first write wins (race condition handling).
 
 ### German Copy
 
@@ -175,10 +175,10 @@ This project uses a **layered documentation approach**:
 - UI: [`docs/specification/ui-screens.md`](docs/specification/ui-screens.md)
 
 **Rules:**
-- Use informal "du" (not "Sie")
-- Date format: `DD.–DD.MM.YYYY` (e.g., "01.–05.08.2025")
-- Party size: "n Personen" (even for 1 person)
-- **Never improvise** - use exact copy from specs
+- Use informal "du" form (not formal "Sie" form) for all user-facing German text
+- Date format: `DD.–DD.MM.YYYY` (example: "01.–05.08.2025" means January 1st through January 5th, 2025)
+- Party size format: Always use "n Personen" format (example: "1 Person" is wrong, use "1 Person" only if spec says so, otherwise "1 Personen")
+- **Never improvise** - copy exact text from specification files, character by character
 
 ### State Machine
 
@@ -212,15 +212,15 @@ This project uses a **layered documentation approach**:
    - Section-specific `CLAUDE.md`
 
 2. **Write tests first** (BDD approach):
-   - Backend: `pytest` tests
-     - ⚠️ **IMPORTANT:** Read [`api/tests/CLAUDE.md`](api/tests/CLAUDE.md) BEFORE writing any test
-     - Always check `tests/utils.py` for existing utilities
-     - Always check `tests/fixtures/factories.py` for factory functions
-     - Use `make_booking()`, `make_approval()` (never manual `Booking(...)`)
-     - Use `get_today()` for dates (never `datetime.now()`)
-     - Follow DRY principle (Don't Repeat Yourself)
-   - Frontend: `playwright` E2E tests
-   - Tests should fail initially
+   - Backend: `pytest` tests in `api/tests/` directory
+     - ⚠️ **MANDATORY:** Read [`api/tests/CLAUDE.md`](api/tests/CLAUDE.md) BEFORE writing any test file
+     - Always check `api/tests/utils.py` for existing utility functions before creating new ones
+     - Always check `api/tests/fixtures/factories.py` for factory functions before creating manual instances
+     - Use factory functions: `make_booking()`, `make_approval()`, `make_user()` (never create instances manually like `Booking(...)`)
+     - Use `get_today()` from utils for current date (never use `datetime.now()` or `date.today()` directly)
+     - Follow DRY principle: if test code repeats, extract to utility or fixture
+   - Frontend: `playwright` E2E tests in `web/` directory
+   - Tests MUST fail initially (red phase) before implementation (green phase)
 
 3. **Implement:**
    - Follow architecture patterns
@@ -228,11 +228,11 @@ This project uses a **layered documentation approach**:
    - Enforce business rules
    - Match data model
 
-4. **Verify:**
-   - All tests pass
-   - Type checks pass (mypy + tsc)
-   - Linting passes (ruff + eslint)
-   - German copy matches specs
+4. **Verify (all must pass):**
+   - All tests pass: run `pytest` for backend, `npx playwright test` for frontend
+   - Type checks pass: run `mypy app/` for backend, `npm run type-check` for frontend
+   - Linting passes: run `ruff check app/` for backend, `npm run lint` for frontend
+   - German copy matches specs exactly: compare character-by-character with specification files
 
 ### Fixing a Bug
 
@@ -278,45 +278,45 @@ This project uses a **layered documentation approach**:
 ### 2. Type Safety Throughout
 
 **Backend:**
-- Python type hints everywhere
-- Mypy strict mode
-- Pydantic validation on all inputs
+- Python type hints on all functions, methods, and variables (no `Any` unless absolutely necessary)
+- Mypy strict mode enabled (check with `mypy app/`)
+- Pydantic BaseModel validation on all API request/response models (no manual validation)
 
 **Frontend:**
-- TypeScript strict mode
-- Zod validation on all forms
-- Type-safe API client
+- TypeScript strict mode enabled (check `tsconfig.json` for strict settings)
+- Zod schema validation on all form inputs (no manual validation)
+- Type-safe API client generated from OpenAPI spec (never manually type API responses)
 
 **Benefit:** Errors caught at compile time, not runtime
 
 ### 3. Test-First (BDD)
 
-**Approach:**
-1. Write failing tests (Gherkin scenarios)
-2. Implement features
-3. Tests pass
-4. Refactor
+**Approach (Red-Green-Refactor cycle):**
+1. Write failing tests first (Red phase - tests must fail)
+2. Implement minimum code to make tests pass (Green phase - tests pass)
+3. Verify all tests pass
+4. Refactor code while keeping tests passing (Refactor phase - improve code quality)
 
 **Every feature has:**
 - Backend pytest tests
 - Frontend Playwright E2E tests
-- ≥80% code coverage target
+- Minimum 80% code coverage target (run `pytest --cov=app` to verify)
 
 ### 4. Mobile-First UI
 
 **Design constraints:**
-- iPhone 8 class minimum (375px width)
-- Touch-friendly targets (44×44pt)
-- No hover dependencies
-- Works on slow networks
+- iPhone 8 class minimum (375px width minimum, 667px height minimum)
+- Touch-friendly targets (minimum 44×44 points, which equals 44×44 pixels at 1x scale)
+- No hover dependencies (all interactions must work with touch/tap only)
+- Works on slow networks (optimize for 3G speeds, minimize initial load)
 
 ### 5. Privacy by Design
 
-**Rules:**
-- Emails NEVER displayed in UI
-- Denied bookings hidden from public
-- First names only
-- Token-based access (no accounts)
+**Rules (strict enforcement):**
+- Email addresses NEVER displayed in UI (not even partially masked like "u***@example.com")
+- Denied bookings hidden from public calendar view (only requester can see their own denied bookings)
+- Only first names displayed (never last names, never email addresses)
+- Token-based access only (no user accounts, no passwords, no login forms)
 
 ---
 
@@ -330,7 +330,7 @@ This project uses a **layered documentation approach**:
 ### ❌ Don't: Forget Date Inclusivity
 **Problem:** Off-by-one errors in date calculations
 
-**Solution:** Always remember BR-001: **inclusive end date**. Jan 1–3 covers three days (1, 2, 3).
+**Solution:** Always remember BR-001: **inclusive end date**. Formula: `TotalDays = EndDate - StartDate + 1`. Example: January 1 to January 3 covers exactly three days (days 1, 2, and 3). Never use `EndDate - StartDate` without adding 1.
 
 ### ❌ Don't: Paraphrase German Copy
 **Problem:** Translating or improvising German text
@@ -340,7 +340,7 @@ This project uses a **layered documentation approach**:
 ### ❌ Don't: Display Email Addresses
 **Problem:** Showing emails in UI violates privacy principle
 
-**Solution:** Emails are PII, never displayed. Only first names shown.
+**Solution:** Email addresses are PII (Personally Identifiable Information), never displayed anywhere in UI. Only first names are shown. If you need to identify users, use first name + booking ID, never email address.
 
 ### ❌ Don't: Skip Business Rules
 **Problem:** Implementing features without checking applicable business rules
@@ -418,34 +418,34 @@ This project has:
 
 ## Helpful Commands
 
-**Backend:**
+**Backend (run from `api/` directory):**
 ```bash
-# Run tests
-pytest
+# Run all tests
+cd api && pytest
 
-# Run with coverage
-pytest --cov=app
+# Run with coverage report
+cd api && pytest --cov=app
 
-# Type check
-mypy src/
+# Type check (checks app/ directory)
+cd api && mypy app/
 
-# Lint
-ruff check src/
+# Lint (checks app/ directory)
+cd api && ruff check app/
 ```
 
-**Frontend:**
+**Frontend (run from `web/` directory):**
 ```bash
-# Run E2E tests
-npx playwright test
+# Run all E2E tests
+cd web && npx playwright test
 
-# Run in headed mode
-npx playwright test --headed
+# Run in headed mode (see browser)
+cd web && npx playwright test --headed
 
-# Type check
-npm run type-check
+# Type check (checks TypeScript files)
+cd web && npm run type-check
 
-# Lint
-npm run lint
+# Lint (checks JavaScript/TypeScript files)
+cd web && npm run lint
 ```
 
 **Git:**

@@ -24,71 +24,70 @@ Use **FastAPI with Python 3.11+** as the backend framework.
 
 ---
 
+## Quick Reference
+
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| Endpoints | `async def` | `def` blocks event loop |
+| Validation | Pydantic `BaseModel` | Manual JSON parsing |
+| Type Hints | Required on endpoints | Missing types break OpenAPI |
+| Framework | FastAPI patterns | Flask/Django patterns |
+| I/O Operations | Async/await | Blocking operations (`requests`, `psycopg2`) |
+
+---
+
 ## Rationale
 
-### Why FastAPI vs Flask vs Django?
+**Why FastAPI:**
+- FastAPI requires async-native architecture → **Constraint:** ALL endpoint functions MUST use `async def` (never `def`)
+- FastAPI uses Pydantic for validation → **Constraint:** ALL request/response models MUST inherit from `pydantic.BaseModel`
+- FastAPI built on Starlette (async framework) → **Constraint:** ALL I/O operations MUST use async/await pattern
+- FastAPI auto-generates OpenAPI docs → **Constraint:** Type hints required on all endpoint functions
 
-**FastAPI (Chosen):**
-- ✅ **AI-friendly** - Standard patterns, well-documented, in Claude's training data
-- ✅ **Built-in type safety** - Pydantic validation on all inputs
-- ✅ **Auto-generated docs** - OpenAPI/Swagger UI for free
-- ✅ **Async native** - FastAPI built on Starlette (async framework)
-- ✅ **Modern Python** - Uses type hints, async/await
-
-**Flask (Rejected):**
-- ❌ No built-in validation (manual with Marshmallow)
-- ❌ No automatic API docs
-- ❌ WSGI-based (not async native)
-- ❌ More boilerplate for REST APIs
-
-**Django (Rejected):**
-- ❌ Overkill (admin panel, ORM, templates not needed)
-- ❌ Heavier (slower startup)
-- ❌ Less async support
-- ❌ More opinionated (harder for AI to navigate)
+**Why NOT Flask:**
+- Flask uses WSGI (synchronous) → **Violation:** WSGI-based frameworks block event loop, preventing async I/O operations
+- Flask requires manual validation → **Violation:** Manual validation (Marshmallow) violates type safety requirement and increases boilerplate
 
 ---
 
 ## Consequences
 
-### Implementation Constraints
+### MUST (Required)
 
-✅ **Validation handled by Pydantic** - Input validation automatic at request boundary
-✅ **Async operations required** - I/O operations must use async/await pattern
-✅ **Type hints required** - All endpoint functions need type annotations
-✅ **OpenAPI schema generated** - API documentation auto-generated from types
+- ALL endpoint functions MUST use `async def` (never `def`) - FastAPI requires async-native architecture to prevent blocking event loop
+- ALL request/response models MUST inherit from `pydantic.BaseModel` - FastAPI uses Pydantic for automatic validation at request boundary
+- Type hints MUST be used on all endpoint functions - Required for OpenAPI schema generation
+- MUST use FastAPI dependency injection (`Depends()`) - FastAPI's built-in dependency injection system
 
-### Complexity Trade-offs
+### MUST NOT (Forbidden)
 
-⚠️ **All endpoints MUST be async** - Using `def` instead of `async def` blocks event loop
-⚠️ **Blocking I/O forbidden** - Synchronous database/file/network operations will block all requests
+- MUST NOT use synchronous I/O operations (blocking database drivers, `requests` library, blocking file reads) - Blocks event loop, preventing async operations
+- MUST NOT use Flask/Django patterns (`@app.route`, `request.get_json()`) - Violates FastAPI decision and lacks built-in validation
+- MUST NOT skip Pydantic validation - ALL inputs MUST be validated at API boundary using Pydantic models
 
-### Neutral
+### Trade-offs
 
-➡️ **FastAPI patterns enforced** - Dependency injection, router structure are framework conventions
+- Many code examples use synchronous patterns - MUST use `async def` for endpoints. MUST NOT use `def` for endpoints. Check for `def` in router files.
+- Code examples may use blocking I/O libraries - MUST use async libraries (async database drivers, `httpx`, `aiofiles`). MUST NOT use blocking libraries (sync database drivers, `requests`). Check for blocking library imports.
 
----
+### Code Examples
 
-## LLM Implementation Constraints
-
-### Required Patterns
-
-**MUST:**
-- ALL endpoint functions use `async def` (never `def`)
-- ALL request/response models inherit from `pydantic.BaseModel`
-- ALL database operations use async SQLAlchemy (`AsyncSession`)
-- German error messages via `HTTPException(status_code, detail="German message")`
-
-**MUST NOT:**
-- Use synchronous I/O operations (`psycopg2`, `requests` library, blocking file reads)
-- Use Flask/Django patterns (`@app.route`, `request.get_json()`)
-- Skip Pydantic validation (validate ALL inputs at API boundary)
-
-**Example - Correct Pattern:**
 ```python
-from fastapi import FastAPI, HTTPException, Depends
+# ❌ WRONG: Synchronous endpoint blocks event loop
+@app.post("/bookings")
+def create_booking(data: BookingCreate):  # Blocks event loop!
+    booking = sync_db_call()  # Blocks all other requests
+    return booking
+
+# ❌ WRONG: No Pydantic validation
+@app.post("/bookings")
+async def create_booking(request: Request):
+    data = await request.json()  # No validation!
+    # Missing type safety
+
+# ✅ CORRECT: Async endpoint with Pydantic validation
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 app = FastAPI()
 
@@ -100,100 +99,44 @@ class BookingCreate(BaseModel):
 @app.post("/api/v1/bookings")  # ✅ Versioned endpoint
 async def create_booking(  # ✅ async def
     data: BookingCreate,  # ✅ Pydantic validation
-    db: AsyncSession = Depends(get_db),  # ✅ Async DB
+    db = Depends(get_db),  # ✅ FastAPI dependency injection
 ) -> BookingResponse:  # ✅ Type hint return
     """Create booking with automatic validation."""
-    # German error message from spec
-    if some_business_rule_violated:
-        raise HTTPException(400, "Dieser Zeitraum ist ungültig.")
-
     booking = await service.create_booking(db, data)  # ✅ await
     return booking
 ```
 
-**Example - WRONG (Anti-patterns):**
-```python
-# ❌ WRONG: Synchronous endpoint
-@app.post("/bookings")
-def create_booking(data: BookingCreate):  # Blocks event loop!
-    booking = sync_db_call()  # Blocks all other requests
-    return booking
-
-# ❌ WRONG: No Pydantic validation
-@app.post("/bookings")
-async def create_booking(request: Request):
-    data = await request.json()  # No validation!
-    # Missing type safety
-```
 
 ### Applies To
 
-**This constraint affects:**
 - ALL backend API endpoints (Phase 2, 3, 4)
+- File patterns: `app/routers/*.py`
 - User story specifications must require `async def` pattern
 - Acceptance criteria must validate Pydantic usage
 
-### When Writing User Stories
+### Validation Commands
 
-**Ensure specifications include:**
-- Endpoint uses `async def` signature
-- Request/response models inherit from `pydantic.BaseModel`
-- German error messages reference `docs/specification/error-handling.md`
-- Database operations use async SQLAlchemy (`AsyncSession`)
+- `grep -r "def.*\(.*\):" app/routers/` (should only show `async def`, not `def`)
+- `grep -r "from pydantic import BaseModel" app/schemas/` (should be present in all schema files)
+- `grep -r "@app\.route\|from flask\|from django" app/` (should be empty - must use FastAPI)
 
 **Related ADRs:**
 - [ADR-006](adr-006-type-safety.md) - Type safety (Pydantic validation details)
-- [ADR-013](adr-013-sqlalchemy-orm.md) - SQLAlchemy (async pattern details)
-
-**Related Specifications:**
-- German error messages: `docs/specification/error-handling.md`
-- Business rules enforced: All BRs from `docs/foundation/business-rules.md` apply to endpoints
-
----
-
-## Implementation Pattern
-
-### Basic Endpoint
-
-```python
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-
-app = FastAPI()
-
-class BookingCreate(BaseModel):
-    """Pydantic auto-validates requests."""
-    requester_email: str
-    party_size: int
-
-@app.post("/bookings")
-async def create_booking(data: BookingCreate):
-    """FastAPI auto-validates 'data' against BookingCreate schema."""
-    if data.party_size > 10:
-        raise HTTPException(400, "Party size too large")
-    return {"status": "created"}
-```
-
-**What FastAPI gives us:**
-- Auto-validation (Pydantic)
-- Auto-docs (OpenAPI UI at `/docs`)
-- Type hints everywhere
-- Async support
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-006: Type Safety (Pydantic + FastAPI integration)
-- ADR-008: Testing Strategy (Pytest + FastAPI testing)
+- [ADR-006](adr-006-type-safety.md) - Type Safety (Pydantic + FastAPI integration)
+- [ADR-008](adr-008-testing-strategy-SUPERSEDED.md) - Testing Strategy (Superseded by ADR-020, ADR-021)
 
 **Tools:**
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [Pydantic](https://docs.pydantic.dev/)
-- [Starlette](https://www.starlette.io/) (underlying framework)
+- [Starlette](https://www.starlette.io/) - Underlying framework
 
-**Why FastAPI:**
-- Modern Python (3.6+ type hints)
-- Performance comparable to Node.js/Go
-- Used by Microsoft, Uber, Netflix
+**Implementation:**
+- `app/main.py` - FastAPI application setup
+- `app/routers/*.py` - API endpoints
+- `app/schemas/*.py` - Pydantic models

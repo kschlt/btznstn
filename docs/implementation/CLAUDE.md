@@ -107,7 +107,7 @@ We discovered 17 issues in Phase 1 implementation because tests were written AFT
    - Backend work? → Read ADR-001 (FastAPI), ADR-012 (PostgreSQL), ADR-013 (SQLAlchemy), ADR-006 (Type Safety), ADR-008 (Pytest)
    - Frontend work? → Read ADR-002 (Next.js), ADR-005 (Shadcn/Tailwind), ADR-006 (TypeScript/Zod), ADR-008 (Playwright)
    - Email work? → Read ADR-004 (Resend)
-   - Deployment work? → Read ADR-016 (Fly.io backend), ADR-017 (Vercel frontend), ADR-018 (GitHub Actions)
+   - Deployment work? → Read ADR-015 (Fly.io backend), ADR-016 (Fly.io Postgres), ADR-017 (Vercel frontend), ADR-018 (GitHub Actions)
    - Testing work? → Read ADR-008 (Pytest/Playwright), ADR-009 (Test patterns)
 
 2. **Understand constraints:**

@@ -11,7 +11,7 @@
 
 **Overall Assessment:** ✅ **GOOD** with room for improvement
 
-The current test implementation follows most best practices from [ADR-008](adr-008-testing-strategy.md) and demonstrates solid TDD/BDD principles. However, there are opportunities to improve maintainability, reduce duplication, and establish clearer patterns for future development.
+The current test implementation follows most best practices from [ADR-008](adr-008-testing-strategy-SUPERSEDED.md) (superseded by ADR-020, ADR-021) and demonstrates solid TDD/BDD principles. However, there are opportunities to improve maintainability, reduce duplication, and establish clearer patterns for future development.
 
 **Key Metrics:**
 - ✅ **74/74 tests passing** (100% pass rate)

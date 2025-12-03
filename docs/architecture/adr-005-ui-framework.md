@@ -25,176 +25,88 @@ Use **Shadcn/ui + Tailwind CSS + Radix UI** for the UI framework.
 
 ---
 
+## Quick Reference
+
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| Component Library | Shadcn/ui (copy-paste) | Material-UI, Chakra UI (npm install) |
+| Styling | Tailwind CSS utility classes | CSS-in-JS, separate CSS files |
+| Accessibility | Radix UI primitives | Manual ARIA/keyboard implementation |
+| Mobile-First | Tailwind responsive breakpoints | Fixed-width layouts |
+| Configuration | Tailwind config for colors | Hardcoded colors |
+
+---
+
 ## Rationale
 
-### Why Shadcn/ui vs Material-UI vs Chakra UI?
+**Why Shadcn/ui + Tailwind CSS + Radix UI:**
+- Shadcn/ui uses copy-paste model → **Constraint:** MUST add components to codebase (not npm install), MUST use `npx shadcn-ui add` command
+- Shadcn/ui built on Radix UI → **Constraint:** MUST use Radix UI primitives for accessibility (WCAG AA compliance)
+- Tailwind CSS provides utility-first classes → **Constraint:** MUST use Tailwind utility classes (no CSS-in-JS, no separate CSS files)
+- Tailwind CSS mobile-first → **Constraint:** MUST use responsive breakpoints (`sm:`, `md:`, `lg:`) for mobile-first design
+- Tailwind CSS supports design tokens → **Constraint:** MUST define custom colors in `tailwind.config.ts`
 
-**Shadcn/ui (Chosen):**
-- ✅ **Copy-paste model** - Components added to your codebase (not npm install)
-- ✅ **Full control** - Can modify components directly
-- ✅ **AI-friendly** - Simple: `npx shadcn-ui add button`
-- ✅ **Transparent** - AI can see all component code
-- ✅ **Accessibility built-in** - Uses Radix UI primitives
-
-**Material-UI (Rejected):**
-- ❌ Heavy bundle (~300KB)
-- ❌ Complex theming (ThemeProvider, createTheme)
-- ❌ Black box (can't easily modify)
-- ❌ CSS-in-JS runtime overhead
-
-**Chakra UI (Rejected):**
-- ❌ Black box (npm install, harder to modify)
-- ❌ CSS-in-JS runtime overhead
-- ❌ Less AI training data
-
-### Why Tailwind CSS?
-
-**Tailwind CSS (Chosen):**
-- ✅ **Massive AI training data** - Most popular CSS framework
-- ✅ **Utility-first** - Self-documenting classNames
-- ✅ **Mobile-first** - Built-in responsive breakpoints (`sm:`, `md:`, `lg:`)
-- ✅ **Design tokens** - Custom colors in config
-- ✅ **Performance** - Purges unused CSS (~10-20KB final)
-- ✅ **No runtime** - Pure CSS, no JavaScript overhead
-
-**Example:**
-```tsx
-<button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">
-  Zustimmen
-</button>
-```
-
-AI reads this instantly - no separate CSS files.
-
-**Custom colors:**
-```typescript
-// tailwind.config.ts
-theme: {
-  extend: {
-    colors: {
-      affiliation: {
-        ingeborg: '#C1DBE3',
-        cornelia: '#C7DFC5',
-        angelika: '#DFAEB4',
-      }
-    }
-  }
-}
-
-// Usage: <div className="bg-affiliation-ingeborg">
-```
-
-### Why Radix UI?
-
-**Radix UI (via Shadcn):**
-- ✅ **WCAG AA compliance** - Keyboard nav, screen readers, focus management
-- ✅ **Unstyled primitives** - Shadcn adds Tailwind styles
-- ✅ **Composable** - Build complex components
-- ✅ **Next.js compatible** - Works with App Router
-
-**Example:**
-```tsx
-<Dialog>
-  <DialogTrigger>Neue Anfrage</DialogTrigger>
-  <DialogContent>
-    {/* Radix handles: focus trap, Esc, ARIA */}
-    <DialogTitle>Buchung erstellen</DialogTitle>
-    {/* Form */}
-  </DialogContent>
-</Dialog>
-```
-
-AI doesn't implement accessibility manually - Radix handles it.
+**Why NOT Material-UI:**
+- Material-UI uses CSS-in-JS runtime → **Violation:** CSS-in-JS runtime overhead violates performance requirement
+- Material-UI is black box (npm install) → **Violation:** Cannot modify components directly, violates transparency requirement for AI
 
 ---
 
 ## Consequences
 
-### Positive
+### MUST (Required)
 
-✅ **AI can add components easily** - Simple CLI commands
-✅ **AI knows Tailwind extremely well** - Massive training data
-✅ **Mobile-first built-in** - Responsive by default
-✅ **Full control** - Components in codebase, modifiable
-✅ **Accessible** - Radix handles ARIA, keyboard, focus
-✅ **Fast** - Small bundle, no runtime overhead
-✅ **Type-safe** - All components TypeScript
+- MUST use Shadcn/ui components (copy-paste model) - Components added to codebase via `npx shadcn-ui add`, not npm install
+- MUST use Tailwind CSS utility classes - No CSS-in-JS, no separate CSS files, use utility classes only
+- MUST use Radix UI primitives via Shadcn - Radix UI provides WCAG AA accessibility (keyboard nav, screen readers, focus management)
+- MUST use mobile-first responsive breakpoints - Use Tailwind breakpoints (`sm:`, `md:`, `lg:`) starting from mobile (375px)
+- MUST define custom colors in `tailwind.config.ts` - Tailwind configuration must be used for design tokens
+- MUST use TypeScript for all components - All components must be `.tsx` files with type safety
 
-### Negative
+### MUST NOT (Forbidden)
 
-⚠️ **Verbose classes** - `className` strings can be long (but readable)
-⚠️ **Copy-paste updates** - Must update components manually (vs npm update)
+- MUST NOT use Material-UI/Chakra UI - Violates copy-paste model and transparency requirement
+- MUST NOT use CSS-in-JS - Violates performance requirement (runtime overhead)
+- MUST NOT use separate CSS files - Violates utility-first constraint
+- MUST NOT hardcode colors - Must use Tailwind config for design tokens
+- MUST NOT skip accessibility - Must use Radix UI primitives (don't implement ARIA manually)
 
-### Neutral
+### Trade-offs
 
-➡️ **Design system** - Define tokens in Tailwind config
-➡️ **Component variants** - Define in code (AI can generate)
+- Many code examples use CSS-in-JS or separate CSS files - MUST use Tailwind utility classes only. MUST NOT use CSS-in-JS or separate CSS files. Check for CSS-in-JS imports or `.css` files in components.
+- Code examples may use Material-UI or Chakra UI - MUST use Shadcn/ui components (copy-paste model). MUST NOT use Material-UI or Chakra UI (npm-installed libraries). Check for Material-UI/Chakra imports.
 
----
+### Applies To
 
-## Implementation Pattern
+- ALL UI components (Phase 5, 6, 7, 8)
+- File patterns: `web/components/**/*.tsx`, `web/app/**/*.tsx`
+- Tailwind configuration: `web/tailwind.config.ts`
 
-### Setup
+### Validation Commands
 
-```bash
-# Install Tailwind + Shadcn
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-npx shadcn-ui@latest init
+- `grep -r "@mui\|@chakra-ui" web/` (should be empty - must use Shadcn/ui)
+- `grep -r "styled\|emotion\|@emotion" web/` (should be empty - no CSS-in-JS)
+- `grep -r "\.css" web/components/` (should be empty - use Tailwind classes)
+- `grep -r "npx shadcn-ui" web/` (should reference Shadcn CLI)
 
-# Add components as needed
-npx shadcn-ui add button dialog calendar form select
-```
-
-### Component Example
-
-```tsx
-// components/booking/BookingCard.tsx
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-
-export function BookingCard({ firstName, status, affiliation }) {
-  return (
-    <Card className="min-h-[44px]"> {/* Mobile tap target */}
-      <CardHeader>
-        <CardTitle className="text-base sm:text-lg">{firstName}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Badge variant={status === 'Confirmed' ? 'success' : 'default'}>
-          {status === 'Pending' && 'Ausstehend'}
-          {status === 'Confirmed' && 'Bestätigt'}
-        </Badge>
-      </CardContent>
-    </Card>
-  )
-}
-```
-
-### Mobile-First Pattern
-
-```tsx
-<div className={cn(
-  'w-full px-4 py-2',        // Mobile: full width, small padding
-  'sm:px-6 sm:py-4',         // Tablet: more padding
-  'lg:max-w-7xl lg:mx-auto'  // Desktop: max width, centered
-)}>
-  {/* Content */}
-</div>
-```
+**Related ADRs:**
+- [ADR-002](adr-002-frontend-framework.md) - Frontend Framework (Next.js integration)
+- [ADR-006](adr-006-type-safety.md) - Type Safety Strategy (TypeScript strict mode)
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-002: Frontend Framework (Next.js integration)
-- ADR-006: Type Safety Strategy (TypeScript strict mode)
+- [ADR-002](adr-002-frontend-framework.md) - Frontend Framework (Next.js integration)
+- [ADR-006](adr-006-type-safety.md) - Type Safety Strategy (TypeScript strict mode)
 
 **Tools:**
 - [Shadcn/ui](https://ui.shadcn.com/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Radix UI](https://www.radix-ui.com/)
 
-**Specifications:**
-- [`docs/specification/ui-screens.md`](../../specification/ui-screens.md) - UI requirements
-- [`docs/design/design-tokens.md`](../../design/design-tokens.md) - Color tokens
+**Implementation:**
+- `web/components/ui/` - Shadcn/ui components
+- `web/tailwind.config.ts` - Tailwind configuration
+- `web/components.json` - Shadcn/ui configuration
