@@ -16,10 +16,15 @@ Architecture decisions and system design:
 **ADRs are the law of this codebase. You MUST follow them.**
 
 #### ADR Status States
-- **Proposed** - Under review, not yet binding
-- **Accepted** - Active constraint, MUST be followed
-- **Superseded** - Replaced by newer ADR, historical record
-- **Deprecated** - No longer applies, historical record
+
+**⚠️ CRITICAL: Always check status FIRST before reading constraints**
+
+- **Proposed** - Under review, NOT binding (do not use as constraint)
+- **Accepted** - Active constraint, MUST be followed (use these constraints)
+- **Superseded** - Replaced by newer ADR, follow "Superseded by" link to find current decision
+- **Deprecated** - No longer applies, follow "Replaced by" link to find current decision
+
+**Status location:** Always at the top of ADR file, right after title
 
 #### Immutability Rule
 
@@ -113,32 +118,41 @@ If answers suggest multiple decisions, create multiple ADRs.
 
 **All ADRs follow a standardized format optimized for LLM consumption:**
 
-1. **Consequences** reframed as Implementation Constraints/Complexity Trade-offs (not human-team concerns)
-2. **LLM Implementation Constraints** section with:
-   - MUST (absolute requirements)
-   - MUST NOT (forbidden anti-patterns)
-   - Code examples (correct vs wrong patterns)
-   - Applies To (which phases/specs affected)
-   - When Writing User Stories (guidance for spec generation)
-3. **Concrete language** - "MUST" not "should", specific constraints not vague guidance
-4. **No verbosity** - Direct, to-the-point constraints
+1. **Quick Reference** table at top (determine if ADR is relevant quickly)
+2. **Consequences** written as Implementation Constraints/Complexity Trade-offs (LLM-actionable, not human-team concerns)
+3. **MUST/MUST NOT patterns** - Explicit constraints with code examples only when showing specific pitfalls
+4. **Concrete language** - "MUST" not "should", specific constraints not vague guidance
+5. **No redundancy** - Each section provides unique value, no duplicate code examples
+6. **No human-oriented content** - Only actionable constraints and references
 
-**Status:** 2/17 ADRs updated (ADR-001, ADR-010). Remaining ADRs are being systematically updated to this format.
+**Status:** 5/17 ADRs updated (ADR-001, ADR-006, ADR-010, ADR-013, ADR-019). Remaining ADRs are being systematically updated to this format.
 
 ### Before Implementing
 
-**ALWAYS check ADRs first:**
-1. Read relevant ADRs for the feature you're implementing
-2. Look for **LLM Implementation Constraints** section (if present, use it)
-3. If ADR lacks LLM constraints, read Consequences section and extract constraints
-4. Treat ADRs as **constraints**, not suggestions
-5. Never violate an ADR without proposing a superseding ADR
+**ALWAYS check ADRs first - follow this workflow:**
+
+1. **Find relevant ADRs** - Search for ADRs related to your feature
+2. **Check status FIRST** - Read status field at top of each ADR
+   - ✅ **"Accepted"** → Use constraints (proceed to step 3)
+   - ⚠️ **"Superseded"** → Follow "Superseded by" link, check that ADR's status
+   - ⚠️ **"Deprecated"** → Follow "Replaced by" link, check that ADR's status
+   - ⏸️ **"Proposed"** → Skip (not yet binding)
+3. **Read Quick Reference** - Determine if ADR is relevant to your work
+4. **If relevant, read Constraints** - Consequences section contains MUST/MUST NOT patterns
+5. **Review Rationale** - Understand decision → constraint → violation chain
+6. **Follow constraints** - Treat Accepted ADRs as binding requirements
+7. **Never violate** - If ADR doesn't work, propose superseding ADR first
+
+**Code Examples in ADRs:**
+- Only included when showing **specific pitfalls** LLMs might take
+- Generic patterns (that LLMs already know) are omitted
+- Examples use consistent naming with codebase (no made-up variables)
 
 **Example: Implementing email service**
 ```
-Step 1: Read ADR-004 (Email Service)
-Step 2: Check for LLM Implementation Constraints section
-Step 3: If present, follow MUST/MUST NOT patterns
+Step 1: Read Quick Reference table in ADR-004 (Email Service)
+Step 2: If relevant, read Consequences section (these ARE the constraints)
+Step 3: Follow MUST/MUST NOT patterns
 Step 4: See decision = Resend (MUST use Resend)
 Step 5: Use Resend (not SendGrid, not AWS SES)
 Step 6: If Resend doesn't work, propose ADR-011 to supersede ADR-004
@@ -146,27 +160,24 @@ Step 6: If Resend doesn't work, propose ADR-011 to supersede ADR-004
 
 ### ADRs as Constraints
 
-**These are NOT optional - all ADRs define MUST/MUST NOT patterns:**
+**All ADRs define MUST/MUST NOT patterns - but ONLY if status is "Accepted".**
 
-- **ADR-001:** MUST use FastAPI (MUST NOT use Flask/Django) - ✅ Has LLM constraints
-- **ADR-002:** MUST use Next.js App Router (MUST NOT use Pages Router)
-- **ADR-004:** MUST use Resend (MUST NOT use SendGrid/AWS SES)
-- **ADR-005:** MUST use Shadcn/ui + Tailwind (MUST NOT use Material UI/Bootstrap)
-- **ADR-006:** MUST enforce type safety (mypy + Pydantic + TypeScript + Zod)
-- **ADR-008:** MUST use Pytest + Playwright (MUST NOT use Jest/Vitest)
-- **ADR-009:** MUST use factory pattern (MUST NOT use raw constructors)
-- **ADR-010:** MUST use naive datetime with Europe/Berlin (MUST NOT use UTC/timezone-aware) - ✅ Has LLM constraints
-- **ADR-011:** MUST use permissive CORS (allow_credentials for trusted SPA)
-- **ADR-012:** MUST use PostgreSQL (MUST NOT use MySQL/MongoDB)
-- **ADR-013:** MUST use SQLAlchemy (MUST NOT use Django ORM/Tortoise ORM)
-- **ADR-014:** MUST use Alembic (MUST NOT use raw SQL migrations)
-- **ADR-015:** MUST host database on Fly.io Postgres
-- **ADR-016:** MUST host backend on Fly.io
-- **ADR-017:** MUST host frontend on Vercel
-- **ADR-018:** MUST use GitHub Actions (MUST NOT use GitLab CI/CircleCI)
-- **ADR-019:** MUST use FastAPI dependencies for auth (MUST NOT use middleware/headers)
+**Status Checking Workflow:**
+1. **Check status FIRST** - Read status field at top of ADR
+2. **If status = "Accepted"** → Use constraints as binding requirements
+3. **If status = "Superseded"** → Follow "Superseded by" link to find current decision
+4. **If status = "Deprecated"** → Follow "Replaced by" link to find current decision
+5. **If status = "Proposed"** → Do NOT use as constraint (awaiting approval)
 
-**If you need to deviate:**
+**Example:**
+```
+Step 1: Read ADR-003 (Database & ORM)
+Step 2: See status = "Superseded by ADR-012, ADR-013, ADR-014, ADR-015"
+Step 3: Follow links to ADR-012, ADR-013, ADR-014, ADR-015 (all Accepted)
+Step 4: Use constraints from those ADRs, not ADR-003
+```
+
+**If you need to deviate from an Accepted ADR:**
 1. STOP implementation
 2. Document WHY current ADR doesn't work
 3. Propose new ADR with clear rationale
@@ -388,32 +399,16 @@ Only after user approves, create the ADR file.
 
 ---
 
-## Current ADRs (Active Constraints)
+## Finding Relevant ADRs
 
-### Core Stack Decisions
+**To find which ADRs apply to your work:**
 
-| ADR | Decision | Status | Summary |
-|-----|----------|--------|---------|
-| **ADR-001** | FastAPI + Python 3.11+ | Accepted | Backend framework |
-| **ADR-002** | Next.js 14 App Router | Accepted | Frontend framework |
-| **ADR-003** | PostgreSQL + SQLAlchemy on Fly.io | Superseded | Database & ORM (split into 012-015) |
-| **ADR-004** | Resend | Accepted | Email service |
-| **ADR-005** | Shadcn/ui + Tailwind CSS | Accepted | UI framework |
-| **ADR-006** | Mypy + Pydantic + TypeScript + Zod | Accepted | Type safety strategy |
-| **ADR-007** | Fly.io + Vercel + GitHub Actions | Superseded | Deployment (split into 015-018) |
-| **ADR-008** | Pytest + Playwright | Accepted | Testing frameworks |
-| **ADR-009** | Repository pattern + factories | Accepted | Test patterns |
-| **ADR-010** | Naive DateTime Storage (Europe/Berlin) | Accepted | DateTime/timezone strategy |
-| **ADR-011** | CORS Security Policy | Accepted | Permissive CORS for trusted SPA |
-| **ADR-012** | PostgreSQL Database | Accepted | Database choice |
-| **ADR-013** | SQLAlchemy ORM | Accepted | Python ORM |
-| **ADR-014** | Alembic Migrations | Accepted | Database migrations |
-| **ADR-015** | Fly.io Postgres Hosting | Accepted | Database hosting |
-| **ADR-016** | Fly.io Backend Hosting | Accepted | Backend hosting |
-| **ADR-017** | Vercel Frontend Hosting | Accepted | Frontend hosting |
-| **ADR-018** | GitHub Actions CI/CD | Accepted | CI/CD automation |
+1. **Check README.md** - Lists all ADRs with status
+2. **Search by topic** - Look for ADRs matching your feature (e.g., "auth" → ADR-019)
+3. **Check status FIRST** - Only use "Accepted" ADRs as constraints
+4. **Follow superseded links** - If ADR is superseded, follow link to current decision
 
-**All accepted ADRs are constraints. Follow them. Superseded ADRs are historical only.**
+**Remember:** Status is at the top of each ADR file. Always check it first before reading constraints.
 
 ---
 
@@ -427,31 +422,30 @@ Read before implementation:
 **Critical workflow:**
 ```
 1. Read user story (WHAT to build)
-2. Read relevant ADRs (HOW to build - constraints)
-3. Read specifications (WHAT exactly - requirements)
-4. Implement following ADR constraints
-5. If ADR doesn't work → propose new ADR (don't violate)
+2. Find relevant ADRs (search by topic)
+3. Check ADR status FIRST (only use "Accepted" ADRs)
+4. If superseded → follow link to current ADR
+5. Read ADR constraints (Consequences section)
+6. Read specifications (WHAT exactly - requirements)
+7. Implement following ADR constraints
+8. If ADR doesn't work → propose new ADR (don't violate)
 ```
 
 ---
 
-## Tech Stack Quick Reference
+## Tech Stack Overview
 
-| Component | Technology | ADR | Constraint |
-|-----------|-----------|-----|------------|
-| API | FastAPI + Python 3.11+ | ADR-001 | MUST use FastAPI |
-| Web | Next.js 14 (App Router) | ADR-002 | MUST use App Router (not Pages) |
-| Database | PostgreSQL 15+ | ADR-012 | MUST use PostgreSQL |
-| DB Hosting | Fly.io Postgres | ADR-015 | MUST use Fly.io Postgres |
-| ORM | SQLAlchemy 2.0 | ADR-013 | MUST use SQLAlchemy |
-| Migrations | Alembic | ADR-014 | MUST use Alembic |
-| Email | Resend | ADR-004 | MUST use Resend |
-| UI | Shadcn/ui + Tailwind | ADR-005 | MUST use Shadcn/ui |
-| Type Safety | Mypy + Pydantic + TypeScript + Zod | ADR-006 | MUST enforce types |
-| Backend Hosting | Fly.io | ADR-016 | MUST deploy backend to Fly.io |
-| Frontend Hosting | Vercel | ADR-017 | MUST deploy frontend to Vercel |
-| CI/CD | GitHub Actions | ADR-018 | MUST use GitHub Actions |
-| Testing | Pytest + Playwright | ADR-008 | MUST use these frameworks |
+**For complete tech stack details, see:** [`technology-stack.md`](technology-stack.md)
+
+**For specific constraints, read the relevant ADR:**
+- Backend: ADR-001 (FastAPI)
+- Frontend: ADR-002 (Next.js)
+- Database: ADR-012 (PostgreSQL), ADR-013 (SQLAlchemy)
+- Testing: ADR-008 (Pytest/Playwright), ADR-009 (Test patterns)
+- Type Safety: ADR-006 (Mypy/Pydantic/TypeScript/Zod)
+- Auth: ADR-019 (FastAPI dependencies)
+
+**Always check ADR status before using constraints.**
 
 ---
 
