@@ -139,25 +139,142 @@ booking.party_size = "five"  # party_size is Mapped[int]
 
 ## Consequences
 
-### Positive
+### Implementation Constraints
 
-✅ **Type-safe** - Mapped[] type hints + mypy plugin
-✅ **Async/await** - Native async for FastAPI
-✅ **AI-friendly** - Industry standard, massive training data
-✅ **Pydantic integration** - Single source of truth
-✅ **Complex queries** - Composable query builder (joins, filtering, sorting)
-✅ **Mature** - 15+ years, v2.0 is modern rewrite
-✅ **Migration tooling** - Alembic (see ADR-014)
+✅ **SQLAlchemy 2.0 REQUIRED** - Type hints (`Mapped[]`) only available in 2.0+
+✅ **Async operations REQUIRED** - ALL database operations use `AsyncSession` (not sync sessions)
+✅ **Type annotations REQUIRED** - ALL model columns use `Mapped[type]` annotations
+✅ **Mypy plugin REQUIRED** - Static type checking enabled for queries
+✅ **asyncpg driver REQUIRED** - PostgreSQL async driver (not psycopg2)
+✅ **Pydantic integration** - ORM models convert to/from Pydantic models
 
-### Negative
+### Complexity Trade-offs
 
-⚠️ **Learning curve** - Powerful but complex
-⚠️ **Verbose** - More code than ActiveRecord-style ORMs
+⚠️ **ALL database operations MUST be async** - Using sync sessions blocks FastAPI event loop
+⚠️ **Type annotations required** - All columns must use `Mapped[type]` (more verbose than untyped)
+⚠️ **SQLAlchemy 2.0+ required** - Cannot use older versions (type hints only in 2.0+)
 
 ### Neutral
 
-➡️ **Version 2.0 required** - Type hints only in 2.0+
-➡️ **Async driver** - Requires asyncpg (PostgreSQL async driver)
+➡️ **asyncpg dependency** - Required for async PostgreSQL operations (not part of SQLAlchemy core)
+
+---
+
+## LLM Implementation Constraints
+
+### Required Patterns
+
+**MUST:**
+- ALL database models inherit from `DeclarativeBase` (SQLAlchemy 2.0 style)
+- ALL model columns use `Mapped[type]` annotations (not untyped columns)
+- ALL database sessions use `AsyncSession` (not sync `Session`)
+- ALL database operations use `await` (queries, commits, rollbacks)
+- ALL database engines use `create_async_engine` (not `create_engine`)
+- ALL database URLs use `postgresql+asyncpg://` (not `postgresql://`)
+- ALL repositories use `AsyncSession` parameter (not sync session)
+- Mypy plugin enabled (`plugins = sqlalchemy.ext.mypy.plugin` in mypy.ini)
+- Pydantic models use `from_attributes=True` for ORM conversion
+
+**MUST NOT:**
+- Use sync `Session` (blocks FastAPI event loop)
+- Use sync `create_engine` (violates async requirement)
+- Use `postgresql://` URL (requires asyncpg driver)
+- Skip `Mapped[]` annotations (defeats type safety)
+- Use SQLAlchemy 1.x patterns (violates ADR-013 decision)
+- Mix sync and async sessions (causes blocking)
+
+**Example - Correct Pattern:**
+```python
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy import select
+
+# ✅ CORRECT: Base model
+class Base(DeclarativeBase):
+    pass
+
+# ✅ CORRECT: Type-annotated model
+class Booking(Base):
+    __tablename__ = "bookings"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    requester_first_name: Mapped[str] = mapped_column(String(40))
+    start_date: Mapped[date]
+    description: Mapped[str | None]  # ✅ Nullable
+
+# ✅ CORRECT: Async engine
+engine = create_async_engine("postgresql+asyncpg://...")
+
+# ✅ CORRECT: Async session
+async with AsyncSession(engine) as session:
+    result = await session.execute(
+        select(Booking).where(Booking.status == StatusEnum.PENDING)
+    )
+    bookings = result.scalars().all()
+```
+
+**Example - WRONG (Anti-patterns):**
+```python
+# ❌ WRONG: Sync session (blocks event loop)
+from sqlalchemy.orm import Session, sessionmaker
+
+SessionLocal = sessionmaker(bind=engine)  # Sync!
+with SessionLocal() as session:  # Blocks FastAPI!
+    bookings = session.query(Booking).all()
+
+# ❌ WRONG: Sync engine
+from sqlalchemy import create_engine
+
+engine = create_engine("postgresql://...")  # Sync!
+
+# ❌ WRONG: Wrong database URL
+engine = create_async_engine("postgresql://...")  # Missing +asyncpg!
+
+# ❌ WRONG: Untyped columns
+class Booking(Base):
+    id = Column(Integer, primary_key=True)  # No Mapped[] annotation!
+
+# ❌ WRONG: Mixing sync/async
+async def get_booking(session: AsyncSession):
+    sync_session = Session(bind=engine)  # Mixing sync/async!
+    return sync_session.query(Booking).first()
+```
+
+### Applies To
+
+**This constraint affects:**
+- ALL database models (all phases)
+- ALL repositories (all phases)
+- ALL database operations (all phases)
+- User story specifications must require async patterns
+- Acceptance criteria must validate async session usage
+
+### When Writing User Stories
+
+**Ensure specifications include:**
+- Models use `Mapped[type]` annotations for all columns
+- Database operations use `AsyncSession` (not sync `Session`)
+- Database URLs use `postgresql+asyncpg://` protocol
+- All queries use `await session.execute()` pattern
+- Mypy plugin enabled for type checking
+
+**Validation commands for user story checklists:**
+- No sync sessions: `grep -r "from sqlalchemy.orm import Session" app/` (should be empty)
+- All async: `grep -r "AsyncSession" app/repositories/` (should be present)
+- Type annotations: `grep -r "Mapped\[" app/models/` (all columns should have)
+- Correct URL: `grep -r "postgresql+asyncpg" app/core/` (should be present)
+- Mypy plugin: `grep -r "sqlalchemy.ext.mypy.plugin" mypy.ini` (should be present)
+
+**Related ADRs:**
+- [ADR-001](adr-001-backend-framework.md) - FastAPI async requirement
+- [ADR-006](adr-006-type-safety.md) - Type hints required
+- [ADR-012](adr-012-postgresql-database.md) - PostgreSQL database choice
+- [ADR-014](adr-014-alembic-migrations.md) - Alembic migrations
+
+**Related Specifications:**
+- Database models: `api/app/models/`
+- Repositories: `api/app/repositories/`
+- Database config: `api/app/core/database.py`
 
 ---
 
