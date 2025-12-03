@@ -114,16 +114,21 @@ If answers suggest multiple decisions, create multiple ADRs.
 
 ## How to Work with ADRs as an AI Agent
 
-### ADR Format: LLM-Tailored Constraints
+### ADR Format: LLM-Actionable but Human-Reviewable
 
-**All ADRs follow a standardized format optimized for LLM consumption:**
+**ADRs serve dual purpose: LLM-actionable constraints AND human-reviewable reasoning.**
 
-1. **Quick Reference** table at top (determine if ADR is relevant quickly)
-2. **Consequences** written as Implementation Constraints/Complexity Trade-offs (LLM-actionable, not human-team concerns)
-3. **MUST/MUST NOT patterns** - Explicit constraints with code examples only when showing specific pitfalls
-4. **Concrete language** - "MUST" not "should", specific constraints not vague guidance
-5. **No redundancy** - Each section provides unique value, no duplicate code examples
-6. **No human-oriented content** - Only actionable constraints and references
+**Format optimized for both audiences:**
+
+1. **Quick Reference** table at top (LLMs scan quickly, humans see overview)
+2. **Rationale** - Reasoning chain (decision → constraint → violation) for LLM understanding AND human review
+3. **Consequences** written as Implementation Constraints/Complexity Trade-offs (LLM-actionable constraints, human-reviewable trade-offs)
+4. **MUST/MUST NOT patterns** - Explicit constraints with code examples only when showing specific pitfalls
+5. **Concrete language** - "MUST" not "should" (LLMs parse better, humans understand clearly)
+6. **No redundancy** - Each section provides unique value, no duplicate code examples
+7. **Human-reviewable** - Context and reasoning preserved for human architects to review decisions
+
+**Key principle:** Constraints must be LLM-actionable, but reasoning must be human-reviewable. Both audiences matter.
 
 **Status:** 5/17 ADRs updated (ADR-001, ADR-006, ADR-010, ADR-013, ADR-019). Remaining ADRs are being systematically updated to this format.
 
@@ -232,17 +237,24 @@ Ask yourself:
 
 ### Step 2: Use ADR Template
 
-**⚠️ CRITICAL: ADRs are LLM-actionable constraints, not human documentation.**
+**⚠️ CRITICAL: ADRs contain LLM-actionable constraints AND human-reviewable reasoning.**
+
+**Dual purpose:**
+- **LLM-actionable:** Constraints written so LLMs can parse and apply them
+- **Human-reviewable:** Reasoning and context preserved for human architects to review decisions
+
+**Both audiences matter:** Constraints must be actionable for LLMs, but reasoning must be reviewable by humans.
 
 **File naming:** `adr-{number}-{title}.md`
 - Number: Next available
 - Title: Kebab-case, descriptive
 
-**Strict Format Requirements:**
-- **LLM-tailored:** Constraints written for LLM agents, not human teams
-- **Concrete language:** Use "MUST" not "should", "MUST NOT" not "avoid"
-- **No verbosity:** Direct, to-the-point constraints
-- **No human-team language:** Remove "learning curve", "team needs to understand" etc.
+**Format Requirements (Dual Purpose):**
+- **LLM-actionable constraints:** MUST/MUST NOT patterns written so LLMs can parse and apply them
+- **Human-reviewable reasoning:** Rationale and context preserved for human architects to review decisions
+- **Concrete language:** Use "MUST" not "should" (LLMs parse better, humans understand clearly)
+- **No verbosity:** Direct, to-the-point constraints (but preserve reasoning chain)
+- **No human-team language:** Remove "learning curve", "team needs to understand" (use constraint language instead)
 
 **What to include:**
 - ✅ Context (brief - why we need this decision)
