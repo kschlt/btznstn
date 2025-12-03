@@ -4,8 +4,45 @@
 
 Architecture decisions and system design:
 - **README.md** - System overview, architecture diagram, principles
-- **technology-stack.md** - Complete tech stack with rationale
+- **technology-stack.md** - Quick reference of technologies used (with ADR links)
 - **adr-001 to ...** - Architecture Decision Records (why we chose each technology)
+
+---
+
+## README.md and technology-stack.md
+
+### Purpose and When to Read
+
+**README.md:**
+- **Purpose:** Management-summary style overview of system architecture
+- **When to read:** When you need to understand the overall system structure, components, principles, or data flow
+- **Contains:** Architecture diagram, system components, key principles, security architecture, deployment architecture
+- **Does NOT contain:** Detailed technology rationale (that's in ADRs), comprehensive ADR listings (just references the ADR directory)
+
+**technology-stack.md:**
+- **Purpose:** Quick reference table of technologies used in the project
+- **When to read:** When you need to quickly see "what technologies are used" without reading ADRs
+- **Contains:** Stack summary table with technology names, versions, and ADR links
+- **Does NOT contain:** Rationale (that's in ADRs), detailed features, installation instructions, or maintenance-heavy information
+
+### Maintenance Rules
+
+**When updating README.md:**
+- ✅ Update if system architecture changes (new components, changed principles)
+- ✅ Update if deployment architecture changes
+- ✅ Keep it concise - management-summary style, no verbosity
+- ❌ Do NOT list all ADRs individually (just reference the ADR directory)
+- ❌ Do NOT duplicate ADR content (ADRs contain the detailed rationale)
+
+**When updating technology-stack.md:**
+- ✅ Update when a new technology is added (add to table with ADR link)
+- ✅ Update when a technology version changes significantly
+- ✅ Update when a technology is replaced (remove old, add new with new ADR link)
+- ❌ Do NOT add detailed features, installation instructions, or documentation links
+- ❌ Do NOT add maintenance-heavy information (env vars, package management, etc.)
+- ❌ Do NOT duplicate ADR content (ADRs contain the rationale)
+
+**Key principle:** Both files are summaries that point to ADRs for details. Keep them minimal and long-lasting to reduce maintenance overhead.
 
 ---
 
@@ -480,7 +517,7 @@ Only after user approves, create the ADR file using the template above.
 **To find which ADRs apply to your work:**
 
 1. **Check filename pattern** - Files ending in `-SUPERSEDED.md` or `-DEPRECATED.md` can be skipped (only follow links to newer ADRs)
-2. **Check README.md** - Lists all ADRs with status
+2. **List ADR files** - Use `glob_file_search` or `list_dir` to find all `adr-*.md` files in this directory
 3. **Search by topic** - Look for ADRs matching your feature (e.g., "auth" → ADR-019)
 4. **Check status** - Only use "Accepted" ADRs as constraints (skip files with `-SUPERSEDED.md` or `-DEPRECATED.md` suffix)
 5. **Follow superseded links** - If ADR is superseded, follow link to current decision (don't read the superseded ADR's constraints)
