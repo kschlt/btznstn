@@ -45,155 +45,91 @@ We will use **naive datetimes (TIMESTAMP WITHOUT TIME ZONE)** for database stora
 
 ---
 
-## Rationale
+## Quick Reference
 
-### Why Naive Datetimes (Not TIMESTAMP WITH TIME ZONE)?
-
-**1. Business Logic is Geographically Fixed**
-- All bookings happen in Betzenstein, Germany (Europe/Berlin timezone)
-- All approvers are in Germany
-- All date business rules reference "today" in German local time
-- No need to support multiple timezones
-
-**2. Simpler Date Comparisons**
-- Date-only comparisons (e.g., "is booking in past?") don't require timezone conversion
-- Query filters like `start_date >= current_date` work directly
-- No ambiguity about "which timezone's midnight?"
-
-**3. Avoids UTC Conversion Confusion**
-- TIMESTAMP WITH TIME ZONE stores UTC internally, displays in session timezone
-- This adds conversion complexity for no benefit (single timezone app)
-- Auto-cleanup at "00:01 Berlin time" is clearer than "23:01 UTC (or 22:01 during DST)"
-
-**4. Explicit Timezone Handling in Application**
-- Forces developers to be explicit about timezone in Python code
-- Uses `pytz.timezone('Europe/Berlin')` consistently
-- Catches timezone bugs at application layer (not silently in database)
-
-### Alternatives Considered
-
-| Alternative | Pros | Cons | Why Rejected |
-|-------------|------|------|--------------|
-| **TIMESTAMP WITH TIME ZONE** | Standard practice for global apps | Adds complexity for single-timezone app; UTC conversions confusing | App is geographically fixed to Germany |
-| **Store UTC, convert on read/write** | Universal time standard | Extra conversion logic; "past" determination requires timezone lookup | No benefit for single-timezone business logic |
-| **String dates (YYYY-MM-DD)** | Simple for date-only fields | Loses time information; hard to query ranges; no DST handling | Need time for timeline events, audit logs |
-| **Unix timestamps (integers)** | Compact storage | Loses readability; hard to query; no database date functions | Not human-readable in DB queries |
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| Database Storage | `TIMESTAMP WITHOUT TIME ZONE` | `TIMESTAMP WITH TIME ZONE` |
+| Datetime Operations | `pytz.timezone('Europe/Berlin')` | `datetime.now()`, `datetime.utcnow()` |
+| Background Jobs | `AsyncIOScheduler(timezone=berlin_tz)` | Scheduler without timezone |
+| Date Fields | `Mapped[date]` for booking dates | `Mapped[datetime]` for date-only fields |
 
 ---
+
+## Rationale
+
+**Why Naive Datetimes:**
+- Business logic is geographically fixed to Germany → **Constraint:** MUST use naive datetimes (`TIMESTAMP WITHOUT TIME ZONE`) with Europe/Berlin assumption
+- Simpler date comparisons without timezone conversion → **Constraint:** MUST use `TIMESTAMP WITHOUT TIME ZONE` for all datetime fields
+- Explicit timezone handling in application layer → **Constraint:** MUST use `pytz.timezone('Europe/Berlin')` for all datetime operations
+
+**Why NOT TIMESTAMP WITH TIME ZONE:**
+- TIMESTAMP WITH TIME ZONE stores UTC internally → **Violation:** Adds conversion complexity for no benefit in single-timezone app, UTC conversions confusing for German business logic
+
+**Why NOT Store UTC and Convert:**
+- Extra conversion logic required → **Violation:** No benefit for single-timezone business logic, "past" determination requires timezone lookup
 
 ## Consequences
 
-### Positive
+### MUST (Required)
 
-**✅ Simpler Business Logic:**
-- "Today" in business rules = `datetime.now(BERLIN_TZ).date()`
-- Past determination: Compare naive dates directly
-- No timezone conversion bugs in date comparisons
+- MUST use `TIMESTAMP WITHOUT TIME ZONE` for all datetime fields - Business logic is geographically fixed to Germany, simpler date comparisons
+- MUST use `pytz.timezone('Europe/Berlin')` for all datetime operations - Explicit timezone handling in application layer
+- MUST use `Mapped[date]` for date-only fields (booking dates) - No time component needed for date-only fields
+- MUST use `AsyncIOScheduler(timezone=berlin_tz)` for background jobs - Background jobs scheduled in Berlin timezone (BR-028, BR-009)
+- MUST use `get_today()` and `get_now()` utilities from `tests/utils.py` - Ensures consistent timezone handling
 
-**✅ Clearer Scheduling:**
-- "00:01 Berlin time" stored as 00:01, not 23:01 UTC
-- Background jobs scheduled in Berlin timezone directly
-- No confusion during daylight saving time transitions
+### MUST NOT (Forbidden)
 
-**✅ Explicit Timezone Handling:**
-- Application code must use `pytz.timezone('Europe/Berlin')` explicitly
-- Type system enforces timezone awareness in Python
-- Harder to accidentally use wrong timezone
+- MUST NOT use `TIMESTAMP WITH TIME ZONE` in migrations - Violates naive datetime strategy, adds conversion complexity
+- MUST NOT use `datetime.now()` or `datetime.utcnow()` - Wrong timezone, violates Europe/Berlin requirement
+- MUST NOT mix timezone-aware and naive datetimes in same function - Causes confusion and bugs
+- MUST NOT store UTC and convert on read/write - Violates single-timezone assumption
 
-**✅ Database Queries Stay Simple:**
-```sql
--- No timezone conversion needed
-SELECT * FROM bookings WHERE start_date >= CURRENT_DATE;
-```
+### Trade-offs
 
-### Negative
+- Convention not enforced by database - MUST use `pytz.timezone('Europe/Berlin')` explicitly. MUST NOT assume server timezone. Check code for timezone usage.
+- Multi-timezone not supported - MUST use Europe/Berlin only. MUST NOT extend to other timezones without schema migration.
 
-**⚠️ Implicit Assumption:**
-- Database doesn't enforce Europe/Berlin - it's a convention
-- Future developers must know to use Berlin timezone
-- Could cause bugs if assumption is violated
+### Code Examples
 
-**⚠️ No Multi-Timezone Support:**
-- Hard to extend to other locations later
-- Would require migration to TIMESTAMP WITH TIME ZONE
-
-### Neutral
-
-**Requires Discipline:**
-- All Python code must use `pytz.timezone('Europe/Berlin')`
-- Tests must use `get_today()` and `get_now()` utilities
-- Documentation must explain the assumption
-
----
-
-## Implementation Notes
-
-### Pattern: Database Storage
-
-**SQLAlchemy Model:**
-```python
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import func
-from datetime import datetime
-
-class Booking(Base):
-    # Store naive datetime (TIMESTAMP WITHOUT TIME ZONE)
-    created_at: Mapped[datetime] = mapped_column(
-        nullable=False,
-        server_default=func.now()  # PostgreSQL NOW() returns Berlin time if server configured
-    )
-
-    # Date fields
-    start_date: Mapped[date] = mapped_column(nullable=False)
-    end_date: Mapped[date] = mapped_column(nullable=False)
-```
-
-### Pattern: Timezone-Aware Business Logic
-
-**Utilities (tests/utils.py):**
 ```python
 import pytz
 from datetime import datetime, date
 
 BERLIN_TZ = pytz.timezone('Europe/Berlin')
 
+# ✅ CORRECT: Get current date
 def get_today() -> date:
-    """Get current date in Europe/Berlin timezone."""
+    """Current date in Europe/Berlin timezone."""
     return datetime.now(BERLIN_TZ).date()
 
+# ✅ CORRECT: Get naive datetime for DB storage
 def get_now() -> datetime:
-    """Get current datetime in Europe/Berlin, returned as naive."""
+    """Current datetime in Europe/Berlin, naive for DB."""
     return datetime.now(BERLIN_TZ).replace(tzinfo=None)
+
+# ❌ WRONG: Server timezone undefined
+today = datetime.now().date()
+
+# ❌ WRONG: UTC instead of Berlin
+today = datetime.utcnow().date()
+
+# ❌ WRONG: Timezone-aware stored in DB
+created_at = datetime.now(BERLIN_TZ)  # Has tzinfo, should be naive
 ```
 
-**Usage in Business Logic:**
-```python
-from tests.utils import get_today, BERLIN_TZ
-from dateutil.relativedelta import relativedelta
-
-# Check if date is in the past (BR-014)
-today = get_today()
-if booking.start_date < today:
-    raise ValueError("Startdatum liegt in der Vergangenheit.")
-
-# Check future horizon (BR-026)
-future_limit = today + relativedelta(months=18)
-if booking.end_date > future_limit:
-    raise ValueError("Buchungen sind nur bis zu 18 Monate im Voraus möglich.")
-```
-
-### Pattern: Background Jobs
-
-**APScheduler Configuration:**
 ```python
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
 
 berlin_tz = pytz.timezone('Europe/Berlin')
+
+# ✅ CORRECT: Scheduler with Berlin timezone
 scheduler = AsyncIOScheduler(timezone=berlin_tz)
 
-# Auto-cleanup: Daily at 00:01 Europe/Berlin
+# BR-028: Auto-cleanup at 00:01 Europe/Berlin
 scheduler.add_job(
     auto_cleanup_past_pending,
     CronTrigger(hour=0, minute=1, timezone=berlin_tz),
@@ -201,33 +137,45 @@ scheduler.add_job(
 )
 ```
 
-### Migration Notes
+```python
+from alembic import op
+import sqlalchemy as sa
 
-**If moving to multi-timezone support later:**
-1. Create migration to add timezone column (default 'Europe/Berlin')
-2. Convert TIMESTAMP WITHOUT TIME ZONE → TIMESTAMP WITH TIME ZONE
-3. Update application code to handle timezone per booking
-4. Maintain backward compatibility with Berlin-only bookings
+def upgrade():
+    op.create_table(
+        'bookings',
+        # ✅ CORRECT: TIMESTAMP WITHOUT TIME ZONE
+        sa.Column('created_at', sa.TIMESTAMP(timezone=False), nullable=False),
+        # ✅ CORRECT: DATE for booking dates
+        sa.Column('start_date', sa.DATE(), nullable=False),
+    )
 
----
+# ❌ WRONG: Don't use TIMESTAMP WITH TIME ZONE
+# sa.Column('created_at', sa.TIMESTAMP(timezone=True), ...)
+```
 
-## Verification Checklist
+### Applies To
 
-- [x] All datetime fields use naive datetime (no tzinfo)
-- [x] `get_today()` and `get_now()` utilities use Europe/Berlin
-- [x] Business rules reference Berlin timezone explicitly
-- [x] Background jobs scheduled in Berlin timezone
-- [x] Tests use `get_today()` and `get_now()` (not `datetime.now()`)
-- [x] Database migrations specify TIMESTAMP WITHOUT TIME ZONE
-- [x] No mixing of timezone-aware and naive datetimes
+- ALL datetime operations (all phases)
+- Database schema migrations (Phase 1)
+- Background jobs (Phase 8)
+- Business rule validation (BR-014, BR-026, BR-028, BR-009)
+- File patterns: `app/models/**/*.py`, `alembic/versions/*.py`, `app/services/**/*.py`
+
+### Validation Commands
+
+- `grep -r "datetime.now()" app/` (should be empty - must use `get_today()` or `get_now()`)
+- `grep -r "datetime.utcnow()" app/` (should be empty - must use Berlin timezone)
+- `grep -r "TIMESTAMP(timezone=True)" alembic/versions/` (should be empty - must use `timezone=False`)
+- `grep -r "pytz.timezone" app/` (should show Europe/Berlin usage)
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-013: SQLAlchemy ORM (SQLAlchemy patterns)
-- ADR-006: Type Safety (mypy catches timezone issues)
+- [ADR-013](adr-013-sqlalchemy-orm.md) - SQLAlchemy ORM
+- [ADR-006](adr-006-type-safety.md) - Type Safety
 
 **Business Rules:**
 - BR-014: Past date determination
@@ -240,7 +188,6 @@ scheduler.add_job(
 - `app/schemas/booking.py` - Future horizon validation
 - `app/models/` - All datetime fields
 
-**External Documentation:**
+**Tools:**
 - [PostgreSQL: Date/Time Types](https://www.postgresql.org/docs/current/datatype-datetime.html)
 - [pytz documentation](https://pythonhosted.org/pytz/)
-- [python-dateutil relativedelta](https://dateutil.readthedocs.io/en/stable/relativedelta.html)

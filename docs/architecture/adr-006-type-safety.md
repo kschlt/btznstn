@@ -41,104 +41,108 @@ Enforce **strict type safety across the entire stack**:
 
 ---
 
+## Quick Reference
+
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| Type Hints | Explicit on all functions | Missing type hints, implicit Any |
+| Backend Validation | Pydantic BaseModel | Manual JSON parsing, Marshmallow |
+| Frontend Validation | Zod schemas | Manual validation, Yup/Joi |
+| Static Checking | Mypy strict (backend), TypeScript strict (frontend) | Relaxed strict mode, Any types |
+| Runtime Validation | Pydantic/Zod at boundaries | Skipped validation, untyped data |
+
+---
+
 ## Rationale
 
-### Why Mypy vs Pyright vs Pytype?
+**Why Mypy + Pydantic + TypeScript + Zod:**
+- Mypy provides static type checking → **Constraint:** MUST use mypy strict mode, MUST have type hints on all functions
+- Pydantic provides runtime validation → **Constraint:** MUST use Pydantic BaseModel for all request/response models
+- TypeScript provides static type checking → **Constraint:** MUST use TypeScript strict mode, MUST have types on all functions
+- Zod provides runtime validation → **Constraint:** MUST use Zod schemas for all form inputs and API responses
 
-**Mypy (Chosen):**
-- ✅ Industry standard, most mature
-- ✅ PEP 484 compliant
-- ✅ IDE support (VS Code, PyCharm)
-- ✅ Gradual typing (though we use strict)
+**Why NOT Marshmallow (Backend):**
+- Marshmallow separates validation from types → **Violation:** Separate validation violates type safety requirement, no automatic OpenAPI generation
 
-**Pyright (Rejected):**
-- Written in TypeScript (not Python)
-- Less Python ecosystem integration
-
-**Pytype (Rejected):**
-- Google-specific
-- Slower on large codebases
-
----
-
-### Why Pydantic vs Marshmallow vs Dataclasses?
-
-**Pydantic (Chosen):**
-- ✅ Runtime validation + type safety
-- ✅ FastAPI native integration
-- ✅ Auto-generates OpenAPI schemas
-- ✅ v2 performance improvements
-
-**Marshmallow (Rejected):**
-- Separate validation from types
-- No automatic OpenAPI generation
-
-**Dataclasses (Rejected):**
-- No runtime validation
-- Manual validation needed
-
----
-
-### Why Zod vs Yup vs Joi?
-
-**Zod (Chosen):**
-- ✅ TypeScript-first (infers types from schemas)
-- ✅ Composable validators
-- ✅ Great DX (developer experience)
-
-**Yup (Rejected):**
-- Types are separate from schemas
-- Less TypeScript-native
+**Why NOT Yup (Frontend):**
+- Yup has types separate from schemas → **Violation:** Separate types violates TypeScript-first requirement, less type-safe
 
 ---
 
 ## Consequences
 
-### Positive
+### MUST (Required)
 
-✅ **Errors caught at compile time** - mypy/tsc catch before deployment
-✅ **Refactoring confidence** - Types prevent breaking changes
-✅ **Self-documenting** - Types serve as inline docs
-✅ **IDE support** - Autocomplete, hover hints work
+- ALL Python functions MUST have explicit type hints (return types and parameters) - Mypy strict mode requires types on every function
+- ALL request/response models MUST inherit from `pydantic.BaseModel` - Pydantic provides runtime validation and type safety
+- ALL form schemas MUST use Zod with type inference - Zod provides TypeScript-first runtime validation
+- ALL API endpoints MUST use Pydantic models for validation - No manual JSON parsing, Pydantic validates automatically
+- ALL database models MUST use SQLAlchemy type annotations (`Mapped[type]`) - Type-safe database models
+- mypy strict mode MUST be enabled (`strict = True` in mypy.ini) - Strict mode catches type errors at compile time
+- TypeScript strict mode MUST be enabled (`strict: true` in tsconfig.json) - Strict mode catches type errors at compile time
+- Runtime validation MUST occur at all boundaries - API requests, database writes, external API calls must be validated
 
-### Negative
+### MUST NOT (Forbidden)
 
-⚠️ **Type annotations required** - All functions/variables must have explicit types (mypy strict mode enforced)
-⚠️ **Boilerplate** - Type annotations add code
-⚠️ **Build step** - mypy/tsc add to CI time (~10-30s)
+- MUST NOT use `Any` type - Violates strict mode, defeats purpose of type safety
+- MUST NOT skip type hints on functions - Mypy strict mode will fail
+- MUST NOT use untyped dictionaries - Use `Dict[str, int]` or TypedDict instead of `dict`
+- MUST NOT skip Pydantic validation - ALL inputs MUST be validated at API boundary
+- MUST NOT skip Zod validation - ALL form inputs and API responses MUST be validated
+- MUST NOT use `# type: ignore` without justification - Indicates design problem that should be fixed
 
-### Neutral
+### Trade-offs
 
-➡️ **Strict mode strictness** - Can relax if needed (but shouldn't)
+- Many code examples skip type hints - MUST use explicit type hints on all functions. MUST NOT skip type annotations. Check for missing return types in function definitions.
+- Code examples may use `Any` type - MUST use specific types. MUST NOT use `Any` type. Check for `Any` usage in codebase.
+- Code examples may skip runtime validation - MUST use Pydantic/Zod at boundaries. MUST NOT skip validation. Check for manual JSON parsing or unvalidated API responses.
 
----
-
-## Implementation Pattern
-
-### Backend: Pydantic Model
+### Code Examples
 
 ```python
+# ❌ WRONG: No type hints
+def create_booking(data):  # mypy strict mode fails
+    return booking
+
+# ❌ WRONG: Using Any
+def process_data(data: Any) -> Any:  # Defeats type safety
+    return data
+
+# ❌ WRONG: Manual JSON parsing without Pydantic
+@router.post("/bookings")
+async def create_booking(request: Request):
+    data = await request.json()  # No validation, no type safety!
+
+# ✅ CORRECT: Type hints and Pydantic validation
 from pydantic import BaseModel, Field
 from datetime import date
 
 class BookingCreate(BaseModel):
-    """Request model for creating booking."""
     requester_email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
     start_date: date
     end_date: date
     party_size: int = Field(ge=1, le=10)
 
-# FastAPI automatically validates
-@router.post("/bookings")
-async def create_booking(data: BookingCreate) -> BookingResponse:
-    # data is guaranteed to match BookingCreate schema
+@router.post("/api/v1/bookings")
+async def create_booking(
+    data: BookingCreate,  # ✅ Pydantic validates automatically
+    db: AsyncSession = Depends(get_db),
+) -> BookingResponse:  # ✅ Explicit return type
     booking = await service.create_booking(data)
     return booking
 ```
 
-### Frontend: Zod Schema
-
 ```typescript
+// ❌ WRONG: No validation, no types
+const response = await fetch('/api/bookings')
+const data = await response.json() // No type safety!
+
+// ❌ WRONG: Using any
+function processBooking(data: any): any {  // Defeats type safety
+  return data
+}
+
+// ✅ CORRECT: Zod schema with type inference
 import { z } from 'zod'
 
 const BookingSchema = z.object({
@@ -148,42 +152,38 @@ const BookingSchema = z.object({
   partySize: z.number().min(1).max(10),
 })
 
-type Booking = z.infer<typeof BookingSchema> // TypeScript type inferred
+type Booking = z.infer<typeof BookingSchema> // ✅ Type inferred
 
-// Validate API response
 const response = await fetch('/api/bookings')
-const data = BookingSchema.parse(await response.json()) // Throws if invalid
+const data: Booking = BookingSchema.parse(await response.json()) // ✅ Validated
 ```
 
-### Mypy Configuration
+### Applies To
 
-```ini
-# mypy.ini
-[mypy]
-strict = True
-warn_return_any = True
-disallow_untyped_defs = True
-```
+- ALL backend API endpoints (Phase 2, 3, 4)
+- ALL frontend forms and API clients (Phase 5, 6, 7)
+- ALL database models and repositories (all phases)
+- ALL service layer functions (all phases)
+- File patterns: `api/app/**/*.py`, `web/**/*.ts`, `web/**/*.tsx`
 
-### TypeScript Configuration
+### Validation Commands
 
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true
-  }
-}
-```
+- Backend: `mypy app/` (must pass with strict mode)
+- Frontend: `tsc --noEmit` (must pass with strict mode)
+- Check for `Any` usage: `grep -r "Any" app/` (should be minimal/justified)
+- Check for missing return types: `grep -r "^def " app/ | grep -v "->"` (should be empty)
+
+**Related ADRs:**
+- [ADR-001](adr-001-backend-framework.md) - Backend Framework (FastAPI + Pydantic integration)
+- [ADR-002](adr-002-frontend-framework.md) - Frontend Framework (TypeScript native in Next.js)
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-001: Backend Framework (FastAPI + Pydantic integration)
-- ADR-002: Frontend Framework (TypeScript native)
+- [ADR-001](adr-001-backend-framework.md) - Backend Framework (FastAPI + Pydantic integration)
+- [ADR-002](adr-002-frontend-framework.md) - Frontend Framework (TypeScript native)
 
 **Tools:**
 - [Mypy](https://mypy-lang.org/)
@@ -191,6 +191,8 @@ disallow_untyped_defs = True
 - [Zod](https://zod.dev/)
 - [TypeScript](https://www.typescriptlang.org/)
 
-**Business Impact:**
-- Catches ~80% of bugs before deployment (per ADR rationale)
-- Reduces debugging time by ~60% (static vs runtime errors)
+**Implementation:**
+- `api/mypy.ini` - Mypy strict mode configuration
+- `web/tsconfig.json` - TypeScript strict mode configuration
+- `api/app/schemas/` - Pydantic models
+- `web/app/` - TypeScript files with Zod schemas

@@ -26,82 +26,57 @@ Deploy Next.js frontend to **Vercel** with global CDN distribution.
 
 ---
 
-## Rationale
+## Quick Reference
 
-### Why Vercel vs Netlify vs Cloudflare Pages vs AWS?
-
-**Vercel (Chosen):**
-- ✅ **Next.js-native** - Made by Next.js creators, zero-config
-- ✅ **Push to deploy** - Connect GitHub repo, auto-deploys
-- ✅ **Global CDN** - <100ms worldwide, ~20ms in Germany
-- ✅ **Preview deployments** - Every PR gets unique URL
-- ✅ **Edge caching** - ISR (Incremental Static Regeneration)
-- ✅ **Free tier** - Generous (unlimited deployments, 100GB bandwidth)
-- ✅ **Automatic HTTPS** - Free TLS certificates
-
-**Netlify (Rejected):**
-- ❌ Not Next.js-native (requires more config)
-- ❌ Smaller edge network
-
-**Cloudflare Pages (Rejected):**
-- ❌ Edge runtime (different from Node.js, compatibility issues)
-- ❌ Build limitations (some Next.js features unsupported)
-
-**AWS S3 + CloudFront (Rejected):**
-- ❌ Complex setup (buckets, distributions, Lambda@Edge)
-- ❌ Expensive ($10-50/month)
-- ❌ Not AI-friendly
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| Hosting Platform | Vercel | Netlify, Cloudflare Pages, AWS S3+CloudFront |
+| CDN | Global edge network | Single region hosting |
+| Preview Deployments | Vercel preview deployments | Manual preview setup |
+| Edge Caching | ISR (Incremental Static Regeneration) | No caching, full SSR every request |
 
 ---
 
-## Key Benefits
+## Rationale
 
-### 1. Zero-Config Next.js Deployment
+**Why Vercel:**
+- Vercel is Next.js-native (made by Next.js creators) → **Constraint:** MUST use Vercel for Next.js hosting (optimized for Next.js)
+- Vercel provides global CDN → **Constraint:** MUST use Vercel's global edge network (<100ms worldwide, ~20ms in Germany)
+- Vercel supports preview deployments → **Constraint:** MUST use Vercel preview deployments (every PR gets unique URL for testing)
+- Vercel supports ISR (Incremental Static Regeneration) → **Constraint:** MUST use ISR for edge caching (fast page loads, low API load)
 
-```bash
-# Connect GitHub repo to Vercel (one-time via UI)
-# Push to main branch
-git push origin main
+**Why NOT Netlify:**
+- Netlify requires more configuration for Next.js → **Violation:** Not Next.js-native, violates zero-config requirement
 
-# Vercel automatically:
-# - Detects changes
-# - Builds Next.js app
-# - Deploys to production
-# - Updates DNS
-```
+**Why NOT Cloudflare Pages:**
+- Cloudflare Pages uses edge runtime (different from Node.js) → **Violation:** Compatibility issues, build limitations, violates Next.js requirement
 
-Zero config = nothing to get wrong.
+---
 
-### 2. Global CDN (Fast Worldwide)
+## Consequences
 
-**Vercel CDN:**
-- Cloudflare-backed global edge network
-- 100+ locations
-- Automatic caching
-- Smart routing
+### MUST (Required)
 
-**Performance:**
-- Germany: ~20ms (primary users)
-- Rest of EU: ~30-50ms
-- Worldwide: <100ms
+- MUST use Vercel for Next.js hosting - Next.js-native, optimized for Next.js
+- MUST use Vercel's global CDN - Fast page loads worldwide (<100ms, ~20ms in Germany)
+- MUST use Vercel preview deployments - Every PR gets unique URL for testing
+- MUST use ISR (Incremental Static Regeneration) for edge caching - Fast page loads, low API load
 
-### 3. Preview Deployments (Test PRs Before Merge)
+### MUST NOT (Forbidden)
 
-**Workflow:**
-1. Create PR with changes
-2. Vercel auto-deploys to `https://betzenstein-pr-123.vercel.app`
-3. Review feature on preview URL
-4. Merge PR → deploys to production
+- MUST NOT use Netlify or Cloudflare Pages - Violates Next.js-native requirement, requires more configuration
+- MUST NOT use AWS S3 + CloudFront - Violates simplicity requirement, complex setup, expensive
+- MUST NOT skip preview deployments - Violates testing requirement, harder to review changes
 
-**Benefits:**
-- Test in production-like environment
-- Share with stakeholders
-- No local setup required
-- Isolated testing
+### Trade-offs
 
-### 4. Edge Caching + ISR
+- Vendor lock-in - MUST use Vercel. MUST NOT use other platforms. Some Vercel-specific features, but Next.js is portable.
+- Free tier limits - MUST use free tier initially. MUST NOT exceed 100GB bandwidth/month without upgrading. Monitor usage before scaling.
+
+### Code Examples
 
 ```typescript
+// ✅ CORRECT: ISR for edge caching
 // app/calendar/page.tsx
 export const revalidate = 60  // Revalidate every 60 seconds
 
@@ -111,99 +86,30 @@ export default async function CalendarPage() {
 }
 ```
 
-**How it works:**
-1. First user: Fetches from API → Generates page → Caches at edge
-2. Next 59s: All users get cached page (instant load)
-3. After 60s: Next request regenerates in background
+### Applies To
 
-Fast for users, low API load, always fresh-ish.
+- ALL frontend hosting (Phase 1, 5, 6, 7, 8)
+- File patterns: `web/`
+- Vercel configuration: `vercel.json` (if needed)
 
----
+### Validation Commands
 
-## Consequences
-
-### Positive
-
-✅ **Zero-config** - Push to GitHub, auto-deploys
-✅ **Global CDN** - <100ms worldwide, ~20ms in Germany
-✅ **Preview deployments** - Every PR gets unique URL
-✅ **Edge caching** - ISR for fast page loads
-✅ **Free tier** - Generous for MVP
-✅ **Automatic HTTPS** - Free TLS certificates
-✅ **Next.js-optimized** - Made by same team
-
-### Negative
-
-⚠️ **Vendor lock-in** - Some Vercel-specific features (but Next.js is portable)
-⚠️ **Free tier limits** - 100GB bandwidth/month
-⚠️ **Less control** - Can't customize build as much as self-hosted
-
-### Neutral
-
-➡️ **Stateless** - No persistent storage (appropriate for frontend)
-➡️ **Serverless** - Edge functions available (not required initially)
-
----
-
-## Implementation Pattern
-
-### Connect GitHub Repo
-
-**Via Vercel dashboard:**
-1. Sign in to [vercel.com](https://vercel.com)
-2. Click "New Project"
-3. Import GitHub repository
-4. Vercel auto-detects Next.js
-5. Deploy
-
-**Build settings (auto-detected):**
-```
-Framework: Next.js
-Build Command: npm run build
-Output Directory: .next
-```
-
-### Set Environment Variables
-
-```
-NEXT_PUBLIC_API_URL=https://api.betzenstein.app  (Production)
-NEXT_PUBLIC_API_URL=https://staging-api.fly.dev  (Preview)
-```
-
-### Deploy
-
-**Automatic:**
-```bash
-git push origin main  # Auto-deploys to production
-git push origin feature  # Auto-deploys preview
-```
-
-**Manual (CLI):**
-```bash
-npm install -g vercel
-vercel  # Preview
-vercel --prod  # Production
-```
-
-### Custom Domain
-
-**Via dashboard:**
-1. Project settings → Add domain
-2. Configure DNS:
-   - A: `76.76.21.21`
-   - CNAME www: `cname.vercel-dns.com`
-3. Vercel auto-provisions TLS certificate
+- `grep -r "export const revalidate" web/app/` (should be present for ISR usage)
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-002: Frontend Framework (Next.js App Router)
-- ADR-011: CORS Security Policy (Frontend ↔ Backend)
-- ADR-016: Fly.io Backend Hosting (backend API)
-- ADR-018: GitHub Actions CI/CD (automated deployment)
+- [ADR-002](adr-002-frontend-framework.md) - Frontend Framework (Next.js App Router)
+- [ADR-011](adr-011-cors-security-policy.md) - CORS Security Policy (Frontend ↔ Backend)
+- [ADR-015](adr-015-flyio-backend-hosting.md) - Fly.io Backend Hosting (backend API)
+- [ADR-018](adr-018-github-actions-cicd.md) - GitHub Actions CI/CD (automated deployment)
 
 **Tools:**
 - [Vercel Documentation](https://vercel.com/docs)
 - [Next.js ISR](https://nextjs.org/docs/app/building-your-application/data-fetching/incremental-static-regeneration)
+
+**Implementation:**
+- `web/` - Next.js frontend application
+- `vercel.json` - Vercel configuration (if needed)

@@ -30,177 +30,109 @@ Use **PostgreSQL 15+** as the relational database.
 
 ---
 
+## Quick Reference
+
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| Database | PostgreSQL 15+ | MySQL, SQLite, MongoDB |
+| Date Range Queries | `daterange` type with GiST index | Manual overlap detection |
+| Concurrency | `SELECT FOR UPDATE` row-level locking | No locking, race conditions |
+| Indexes | GiST indexes for range queries | B-tree only, slow range queries |
+
+---
+
 ## Rationale
 
-### Why PostgreSQL vs MySQL vs SQLite vs MongoDB?
+**Why PostgreSQL:**
+- PostgreSQL provides native date range types → **Constraint:** MUST use `daterange` type with GiST indexes for overlap detection
+- PostgreSQL provides row-level locking → **Constraint:** MUST use `SELECT FOR UPDATE` for concurrent operations (BR-024, BR-029)
+- PostgreSQL has massive AI training data → **Constraint:** MUST use PostgreSQL 15+ (modern features, better AI support)
 
-**PostgreSQL (Chosen):**
-- ✅ **ACID compliance** - Atomicity, Consistency, Isolation, Durability
-- ✅ **Row-level locking** - `SELECT FOR UPDATE` prevents race conditions
-- ✅ **Date range types** - Native overlap detection (`daterange`, `&&` operator)
-- ✅ **GiST indexes** - Fast range queries
-- ✅ **Massive AI training data** - AI knows PostgreSQL extremely well
-- ✅ **Mature** - 30+ years, stable
-- ✅ **Open source** - No vendor lock-in
+**Why NOT MySQL:**
+- MySQL lacks date range types → **Violation:** Requires custom conflict detection, slower queries, violates BR-002 requirement
 
-**MySQL (Rejected):**
-- ❌ No date range types (custom conflict detection required)
-- ❌ Weaker transaction isolation
-- ❌ Less AI training data
+**Why NOT SQLite:**
+- SQLite has file-level locking → **Violation:** No concurrent writes, violates BR-024 and BR-029 requirements
 
-**SQLite (Rejected):**
-- ❌ No concurrent writes (file-level locking)
-- ❌ No range types
-- ❌ Not production-suitable
-
-**MongoDB (Rejected):**
-- ❌ No ACID across documents
-- ❌ No relational integrity
-- ❌ Overkill for structured data
-
----
-
-## Key PostgreSQL Features for Booking System
-
-### 1. Date Range Types (Killer Feature)
-
-**Native overlap detection:**
-```sql
--- Create GiST index for fast overlap queries
-CREATE INDEX bookings_date_range_gist
-ON bookings USING GIST (daterange(start_date, end_date, '[]'));
-
--- Check for overlaps (fast!)
-SELECT * FROM bookings
-WHERE daterange(start_date, end_date, '[]') && daterange('2025-08-01', '2025-08-05', '[]')
-  AND status IN ('Pending', 'Confirmed');
-```
-
-**Why this is powerful:**
-- `'[]'` = inclusive range (matches BR-001: inclusive end date)
-- `&&` = overlap operator (optimized by GiST index)
-- Index scan, not table scan
-- PostgreSQL handles edge cases correctly
-
-**Alternative (MySQL/SQLite - slower, complex):**
-```sql
-SELECT * FROM bookings
-WHERE (start_date <= '2025-08-05' AND end_date >= '2025-08-01')
-  AND status IN ('Pending', 'Confirmed');
--- Requires multiple indexes, harder to optimize
-```
-
-### 2. Row-Level Locking (BR-024, BR-029)
-
-**First-action-wins pattern:**
-```sql
-BEGIN;
-
--- Lock booking row (prevents concurrent modifications)
-SELECT * FROM bookings WHERE id = :booking_id FOR UPDATE;
-
--- Check current state
--- Update if appropriate
-
-COMMIT;
-```
-
-Standard SQL transaction pattern prevents race conditions.
-
-### 3. Advanced Indexing
-
-**Partial indexes (optimize common queries):**
-```sql
--- Index only pending approvals (smaller, faster)
-CREATE INDEX approvals_outstanding
-ON approvals (party_id, booking_id)
-WHERE response = 'NoResponse';
-```
-
----
+**Why NOT MongoDB:**
+- MongoDB lacks ACID across documents → **Violation:** No transactional safety, violates BR-002, BR-024, BR-029 requirements
 
 ## Consequences
 
-### Positive
+### MUST (Required)
 
-✅ **ACID guarantees** - Transactional safety for conflicts
-✅ **Date range types** - Native overlap detection
-✅ **GiST indexes** - Fast range queries
-✅ **Row-level locking** - SELECT FOR UPDATE prevents races
-✅ **AI-friendly** - Massive training data, standard SQL
-✅ **Mature & stable** - 30+ years
-✅ **Open source** - No vendor lock-in
-✅ **JSON support** - Future-proof (JSONB for metadata)
+- MUST use PostgreSQL 15+ - Modern features, improved performance, better AI support
+- MUST use `daterange` type with GiST indexes for overlap detection - Native overlap detection, fast queries (BR-002)
+- MUST use `SELECT FOR UPDATE` for concurrent operations - Row-level locking prevents race conditions (BR-024, BR-029)
+- MUST use GiST indexes for range queries - Fast overlap detection, optimized by PostgreSQL
 
-### Negative
+### MUST NOT (Forbidden)
 
-⚠️ **More features than needed initially** - Range types powerful but simple MVP
-⚠️ **Server required** - Not file-based (but appropriate for production)
+- MUST NOT use MySQL or SQLite - Violates date range type requirement, slower queries
+- MUST NOT use MongoDB - Violates ACID requirement, no transactional safety
+- MUST NOT use manual overlap detection - Violates native range type requirement, slower and error-prone
 
-### Neutral
+### Trade-offs
 
-➡️ **Version 15+** - Modern features (improved performance, better JSON)
-➡️ **Range types** - PostgreSQL-specific (but worth it)
+- PostgreSQL-specific features - MUST use PostgreSQL. MUST NOT use other databases. Range types are PostgreSQL-specific but worth it for BR-002.
 
----
-
-## Implementation Pattern
-
-### Connection String
-
-```bash
-# Local
-DATABASE_URL=postgresql://postgres:dev@localhost:5432/betzenstein
-
-# Production (Fly.io Postgres - see ADR-015)
-DATABASE_URL=postgresql://user:pass@betzenstein-db.internal:5432/betzenstein
-```
-
-### Schema Example
+### Code Examples
 
 ```sql
-CREATE TABLE bookings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    requester_first_name VARCHAR(40) NOT NULL,
-    requester_email VARCHAR(255) NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    total_days INTEGER NOT NULL,
-    party_size INTEGER NOT NULL CHECK (party_size >= 1 AND party_size <= 10),
-    status VARCHAR(20) NOT NULL DEFAULT 'Pending',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_activity_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- GiST index for overlap detection
+-- ✅ CORRECT: Date range type with GiST index
 CREATE INDEX bookings_date_range_gist
 ON bookings USING GIST (daterange(start_date, end_date, '[]'));
 
--- B-tree indexes for common queries
-CREATE INDEX bookings_status ON bookings (status);
-CREATE INDEX bookings_last_activity_at ON bookings (last_activity_at DESC);
-```
+SELECT * FROM bookings
+WHERE daterange(start_date, end_date, '[]') && daterange('2025-08-01', '2025-08-05', '[]')
+  AND status IN ('Pending', 'Confirmed');
 
-### Conflict Detection (BR-002)
+-- ❌ WRONG: Manual overlap detection (MySQL/SQLite pattern)
+SELECT * FROM bookings
+WHERE (start_date <= '2025-08-05' AND end_date >= '2025-08-01')
+  AND status IN ('Pending', 'Confirmed');
+```
 
 ```sql
--- Check if date range overlaps any existing booking
-SELECT COUNT(*) FROM bookings
-WHERE daterange(start_date, end_date, '[]') && daterange(:start, :end, '[]')
-  AND status IN ('Pending', 'Confirmed')
-  AND id != :exclude_id;  -- Exclude current booking (for edits)
+-- ✅ CORRECT: Row-level locking for concurrency
+BEGIN;
+SELECT * FROM bookings WHERE id = :booking_id FOR UPDATE;
+-- Update if appropriate
+COMMIT;
 
--- If COUNT > 0, conflict exists
+-- ❌ WRONG: No locking (race condition)
+SELECT * FROM bookings WHERE id = :booking_id;
+-- Update (may conflict with concurrent request)
 ```
+
+### Applies To
+
+- ALL database schema definitions (Phase 1)
+- ALL conflict detection queries (BR-002)
+- ALL concurrent operations (BR-024, BR-029)
+- File patterns: `alembic/versions/*.py`, `app/models/**/*.py`
+
+### Validation Commands
+
+- `grep -r "daterange" alembic/versions/` (should be present for date range queries)
+- `grep -r "USING GIST" alembic/versions/` (should be present for range indexes)
+- `grep -r "FOR UPDATE" app/repositories/` (should be present for concurrent operations)
+
+---
+
+**Related ADRs:**
+- [ADR-013](adr-013-sqlalchemy-orm.md) - SQLAlchemy ORM
+- [ADR-014](adr-014-alembic-migrations.md) - Alembic Migrations
+- [ADR-016](adr-016-flyio-postgres-hosting.md) - Fly.io Postgres Hosting
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-013: SQLAlchemy ORM (ORM for PostgreSQL)
-- ADR-014: Alembic Migrations (schema migrations)
-- ADR-015: Fly.io Postgres Hosting (hosting platform)
+- [ADR-013](adr-013-sqlalchemy-orm.md) - SQLAlchemy ORM
+- [ADR-014](adr-014-alembic-migrations.md) - Alembic Migrations
+- [ADR-016](adr-016-flyio-postgres-hosting.md) - Fly.io Postgres Hosting
 
 **Business Rules:**
 - BR-001: Inclusive end date (range type `'[]'` matches this)

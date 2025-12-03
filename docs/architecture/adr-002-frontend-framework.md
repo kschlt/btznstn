@@ -24,104 +24,81 @@ Use **Next.js 14+ with App Router** as the frontend framework.
 
 ---
 
+## Quick Reference
+
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| Framework | Next.js 14+ App Router | Create React App, Vite, Pages Router |
+| Routing | File-based routing | Manual routing (`react-router`) |
+| TypeScript | Zero-config TypeScript | JavaScript without types |
+| Components | Server/Client Components | All client-side components |
+
+---
+
 ## Rationale
 
-### Why Next.js vs Create React App vs Vite?
+**Why Next.js:**
+- Next.js requires App Router (not Pages Router) → **Constraint:** MUST use App Router with Server Components
+- Next.js provides file-based routing → **Constraint:** MUST use file-based routing (no `react-router`)
+- Next.js supports zero-config TypeScript → **Constraint:** MUST use TypeScript (`.tsx` files)
 
-**Next.js (Chosen):**
-- ✅ **AI-friendly** - Most popular React framework, in Claude's training data
-- ✅ **App Router** - Modern React patterns (Server Components)
-- ✅ **Zero-config TypeScript** - Just rename .js → .tsx
-- ✅ **Vercel deployment** - One-click deploy, automatic
-- ✅ **Built-in routing** - File-based, no react-router needed
-
-**Create React App (Rejected):**
-- ❌ Deprecated (unmaintained since 2022)
-- ❌ No built-in routing
-- ❌ Manual deployment setup
-
-**Vite (Rejected):**
-- ❌ Less AI training data than Next.js
-- ❌ Manual routing (react-router)
-- ❌ More configuration needed
+**Why NOT Create React App:**
+- Create React App is deprecated (unmaintained since 2022) → **Violation:** Using deprecated framework violates maintenance requirement
+- Create React App requires manual routing → **Violation:** Manual routing (`react-router`) violates file-based routing constraint
 
 ---
 
 ## Consequences
 
-### Positive
+### MUST (Required)
 
-✅ **Fast development** - File-based routing, hot reload
-✅ **TypeScript native** - No configuration needed
-✅ **Vercel optimized** - Automatic deployment, edge caching
-✅ **Modern React** - Server Components, Suspense, etc.
+- MUST use Next.js 14+ with App Router - Next.js provides file-based routing and Server Components
+- MUST use file-based routing - File structure in `app/` directory defines routes (no `react-router`)
+- MUST use TypeScript - Zero-config TypeScript support, all files use `.tsx` extension
 
-### Negative
+### MUST NOT (Forbidden)
 
-⚠️ **App Router learning curve** - Newer than Pages Router
-⚠️ **Server Components** - Must understand client vs server
+- MUST NOT use Create React App - Deprecated framework (unmaintained since 2022)
+- MUST NOT use manual routing (`react-router`) - Violates file-based routing constraint
+- MUST NOT use Pages Router - Must use App Router (Next.js 14+ requirement)
 
-### Neutral
+### Trade-offs
 
-➡️ **Next.js conventions** - Opinionated structure (good for consistency)
+- Many code examples use Pages Router - MUST use App Router patterns (`app/` directory). MUST NOT use Pages Router patterns (`pages/` directory). Check for `pages/` directory usage.
+- Code examples may mix Server and Client Components incorrectly - MUST use `"use client"` directive only when component uses browser APIs or React hooks. MUST NOT use `"use client"` unnecessarily. Verify `"use client"` usage.
 
----
+### Applies To
 
-## Implementation Pattern
+- ALL frontend pages and components (Phase 5, 6, 7, 8)
+- File patterns: `web/app/**/*.tsx`
+- Routing structure in `web/app/` directory
 
-### File Structure
+### Validation Commands
 
-```
-web/
-  app/
-    layout.tsx          # Root layout
-    page.tsx            # Home page (calendar)
-    bookings/
-      [id]/
-        page.tsx        # Booking details
-    approver/
-      page.tsx          # Approver overview
-  components/
-    ui/                 # Shadcn/ui components
-    calendar/           # Custom calendar components
-```
+- `grep -r "react-router" web/` (should be empty)
+- `grep -r "from 'next/router'" web/` (should be empty - use App Router, not Pages Router)
+- `grep -r "\.jsx" web/app/` (should be empty - use `.tsx` files)
 
-### Basic Page
-
-```typescript
-// app/calendar/page.tsx
-export default function CalendarPage() {
-  return (
-    <div className="container">
-      <h1>Kalender</h1>
-      {/* Calendar component */}
-    </div>
-  )
-}
-```
-
-### TypeScript Config
-
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true
-  }
-}
-```
+**Related ADRs:**
+- [ADR-005](adr-005-ui-framework.md) - UI Framework (Shadcn/ui + Tailwind)
+- [ADR-006](adr-006-type-safety.md) - Type Safety (TypeScript strict)
+- [ADR-017](adr-017-vercel-frontend-hosting.md) - Vercel Hosting (deployment)
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-005: UI Framework (Shadcn/ui + Tailwind)
-- ADR-006: Type Safety (TypeScript strict)
-- ADR-017: Vercel Hosting (deployment)
+- [ADR-005](adr-005-ui-framework.md) - UI Framework (Shadcn/ui + Tailwind)
+- [ADR-006](adr-006-type-safety.md) - Type Safety (TypeScript strict)
+- [ADR-017](adr-017-vercel-frontend-hosting.md) - Vercel Hosting (deployment)
 
 **Tools:**
 - [Next.js](https://nextjs.org/)
 - [App Router Docs](https://nextjs.org/docs/app)
 - [Vercel](https://vercel.com/)
+
+**Implementation:**
+- `web/app/` - Next.js App Router pages
+- `web/components/` - React components
+- `web/tsconfig.json` - TypeScript configuration

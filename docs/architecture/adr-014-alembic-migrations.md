@@ -26,236 +26,118 @@ Use **Alembic** for database migrations.
 
 ---
 
-## Rationale
+## Quick Reference
 
-### Why Alembic vs Flyway vs Django Migrations?
-
-**Alembic (Chosen):**
-- ✅ **SQLAlchemy integration** - Built by SQLAlchemy team
-- ✅ **Auto-generation** - Compare ORM models to database, generate migration
-- ✅ **Reversible** - Every migration has `upgrade()` and `downgrade()`
-- ✅ **Version-controlled** - Python files in Git
-- ✅ **Incremental** - Apply one migration at a time
-- ✅ **SQL generation** - Review SQL before apply (`--sql` flag)
-
-**Flyway (Rejected):**
-- ❌ No auto-generation (must write SQL manually)
-- ❌ No ORM awareness
-- ❌ Java-based (extra dependency)
-
-**Django Migrations (Rejected):**
-- ❌ Requires Django (we're using FastAPI)
-- ❌ Tightly coupled to Django
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| Migration Tool | Alembic | Flyway, Django Migrations |
+| Migration Generation | Auto-generate from ORM models | Manual SQL writing |
+| Migration Reversibility | All migrations have `downgrade()` | Migrations without rollback |
+| Migration Version Control | Python files in Git | Database-only tracking |
 
 ---
 
-## Key Alembic Features
+## Rationale
 
-### 1. Auto-Generation from ORM
+**Why Alembic:**
+- Alembic integrates with SQLAlchemy → **Constraint:** MUST use Alembic for database migrations
+- Alembic auto-generates migrations from ORM models → **Constraint:** MUST use `alembic revision --autogenerate` for schema changes
+- Alembic provides reversible migrations → **Constraint:** MUST include `downgrade()` function in all migrations
 
-```bash
+**Why NOT Flyway:**
+- Flyway requires manual SQL writing → **Violation:** No auto-generation, no ORM awareness, violates AI-friendly requirement
+
+**Why NOT Django Migrations:**
+- Django Migrations require Django framework → **Violation:** We use FastAPI, not Django
+
+## Consequences
+
+### MUST (Required)
+
+- MUST use Alembic for database migrations - SQLAlchemy integration, auto-generation from ORM models
+- MUST use `alembic revision --autogenerate` for schema changes - Auto-generate migrations from ORM model changes
+- MUST include `downgrade()` function in all migrations - Reversible migrations for rollback safety
+- MUST review auto-generated migrations before applying - Auto-generated migrations may need manual tweaks
+
+### MUST NOT (Forbidden)
+
+- MUST NOT use Flyway or Django Migrations - Violates SQLAlchemy integration requirement
+- MUST NOT skip `downgrade()` function - Violates reversibility requirement
+- MUST NOT apply migrations without review - Auto-generated migrations may be incorrect
+
+### Trade-offs
+
+- Auto-generated migrations require review - MUST review generated migration file before applying. MUST check for: column renames (should use `op.alter_column`, not drop+add), data migrations (may need manual `op.execute`), index changes (verify correctness). MUST NOT apply migration if it looks incorrect.
+- Downgrade may cause data loss - MUST include `downgrade()` function in all migrations. MUST NOT assume downgrade is safe. MUST check if downgrade drops columns or deletes data.
+
+### Code Examples
+
+```python
+# ✅ CORRECT: Auto-generate migration
 # Change ORM model
 class Booking(Base):
     notes: Mapped[Optional[str]] = mapped_column(Text)  # New field
 
-# Auto-generate migration
-alembic revision --autogenerate -m "Add notes field to bookings"
-```
+# Generate migration
+# alembic revision --autogenerate -m "Add notes field to bookings"
 
-**Generated migration:**
-```python
-# alembic/versions/001_add_notes_field.py
 def upgrade():
     op.add_column('bookings', sa.Column('notes', sa.Text(), nullable=True))
 
 def downgrade():
     op.drop_column('bookings', 'notes')
-```
 
-AI changes ORM model → Alembic generates migration → AI reviews.
-
-### 2. Reversible Migrations (Rollback Safety)
-
-**Every migration has both directions:**
-```python
-def upgrade():
-    op.create_index('ix_bookings_status', 'bookings', ['status'])
-
-def downgrade():
-    op.drop_index('ix_bookings_status', table_name='bookings')
-```
-
-**Why reversibility:**
-- Rollback on failure
-- Test in staging (apply → test → rollback)
-- Safe deployments
-
-### 3. Version Control (Git-Tracked)
-
-**Migrations are Python files:**
-```
-alembic/
-├── versions/
-│   ├── 001_create_bookings_table.py
-│   ├── 002_create_approvals_table.py
-│   ├── 003_add_timeline_events.py
-│   └── 004_add_gist_index.py
-├── env.py
-└── script.py.mako
-```
-
-**Benefits:**
-- See schema changes over time
-- Code review migrations in PRs
-- Reproducible across environments
-
-### 4. Incremental Application
-
-```bash
-# Check current version
-alembic current
-# Output: 003_add_timeline_events (head)
-
-# Apply pending migrations
-alembic upgrade head
-# Applies: 004_add_gist_index
-```
-
-Small, focused changes. Test incrementally.
-
----
-
-## Common Migration Patterns
-
-### Safe: Add Nullable Column
-
-```python
+# ❌ WRONG: Missing downgrade function
 def upgrade():
     op.add_column('bookings', sa.Column('notes', sa.Text(), nullable=True))
+# No downgrade() - violates reversibility requirement
+```
+
+```python
+# ✅ CORRECT: Rename column (manual edit required)
+def upgrade():
+    op.alter_column('bookings', 'party_size', new_column_name='num_guests')
 
 def downgrade():
-    op.drop_column('bookings', 'notes')
-```
+    op.alter_column('bookings', 'num_guests', new_column_name='party_size')
 
-### Unsafe: Add Non-Nullable (Two Migrations Required)
-
-```python
-# Migration 1: Add nullable
-def upgrade():
-    op.add_column('bookings', sa.Column('priority', sa.Integer(), nullable=True))
-
-# Migration 2: Populate + make non-nullable
-def upgrade():
-    op.execute("UPDATE bookings SET priority = 1 WHERE priority IS NULL")
-    op.alter_column('bookings', 'priority', nullable=False)
-```
-
-### Rename Column (Manual Edit Required)
-
-```python
-# Auto-generated (WRONG - loses data):
+# ❌ WRONG: Auto-generated rename (loses data)
 def upgrade():
     op.drop_column('bookings', 'party_size')
     op.add_column('bookings', sa.Column('num_guests', sa.Integer()))
-
-# Correct (manual edit):
-def upgrade():
-    op.alter_column('bookings', 'party_size', new_column_name='num_guests')
 ```
+
+### Applies To
+
+- ALL database schema changes (all phases)
+- File patterns: `alembic/versions/*.py`, `alembic/env.py`
+
+### Validation Commands
+
+- `grep -r "def downgrade" alembic/versions/` (all migrations should have downgrade function)
+- `grep -r "alembic revision --autogenerate"` (should use auto-generation for schema changes)
+- `grep -r "from app.models.base import Base" alembic/env.py` (should import all models for auto-generation)
 
 ---
 
-## Consequences
-
-### Positive
-
-✅ **Auto-generation** - Compare ORM → database, generate migration
-✅ **Reversible** - Every migration has downgrade()
-✅ **Version-controlled** - Migrations in Git
-✅ **SQLAlchemy integration** - Uses SQLAlchemy operations
-✅ **Incremental** - Apply one migration at a time
-✅ **SQL generation** - Review before apply (`--sql`)
-
-### Negative
-
-⚠️ **Manual review required** - Auto-generated migrations may need tweaks
-⚠️ **Downgrade not always safe** - Dropping columns loses data
-⚠️ **Learning curve** - Must understand migration patterns
-
-### Neutral
-
-➡️ **Python files** - Migrations are Python scripts (flexible but can be complex)
-➡️ **Sequential** - Must apply in order (can't skip)
-
----
-
-## Implementation Pattern
-
-### Installation
-
-```bash
-pip install alembic>=1.13.0
-
-# Initialize
-alembic init alembic
-```
-
-### Configure Alembic
-
-```python
-# alembic/env.py
-from app.models.base import Base  # Import all models
-from app.core.config import settings
-
-# Set SQLAlchemy metadata
-target_metadata = Base.metadata
-
-# Set database URL
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
-```
-
-### Create Migration
-
-```bash
-# Auto-generate from ORM changes
-alembic revision --autogenerate -m "Create bookings table"
-
-# Manual migration
-alembic revision -m "Add custom index"
-```
-
-### Apply Migrations
-
-```bash
-# Upgrade to latest
-alembic upgrade head
-
-# Downgrade one version
-alembic downgrade -1
-
-# Check current version
-alembic current
-```
-
-### CI/CD Integration
-
-```yaml
-# .github/workflows/deploy-backend.yml
-- name: Run migrations
-  run: alembic upgrade head
-  env:
-    DATABASE_URL: ${{ secrets.DATABASE_URL }}
-```
+**Related ADRs:**
+- [ADR-012](adr-012-postgresql-database.md) - PostgreSQL Database
+- [ADR-013](adr-013-sqlalchemy-orm.md) - SQLAlchemy ORM
+- [ADR-018](adr-018-github-actions-cicd.md) - GitHub Actions CI/CD
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-012: PostgreSQL Database (database choice)
-- ADR-013: SQLAlchemy ORM (ORM integration)
-- ADR-018: GitHub Actions CI/CD (deployment integration)
+- [ADR-012](adr-012-postgresql-database.md) - PostgreSQL Database
+- [ADR-013](adr-013-sqlalchemy-orm.md) - SQLAlchemy ORM
+- [ADR-018](adr-018-github-actions-cicd.md) - GitHub Actions CI/CD
 
 **Tools:**
 - [Alembic Documentation](https://alembic.sqlalchemy.org/)
 - [Alembic Tutorial](https://alembic.sqlalchemy.org/en/latest/tutorial.html)
+
+**Implementation:**
+- `alembic/env.py` - Alembic configuration
+- `alembic/versions/` - Migration files

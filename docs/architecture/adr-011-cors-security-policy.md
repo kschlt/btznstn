@@ -46,109 +46,75 @@ app.add_middleware(
 
 ---
 
+## Quick Reference
+
+| Constraint | Requirement | Violation |
+|------------|-------------|-----------|
+| CORS Origins | Environment-configurable via `settings.get_allowed_origins()` | Hardcoded origins |
+| CORS Credentials | `allow_credentials=True` | `allow_credentials=False` |
+| CORS Methods | `allow_methods=["*"]` | Enumerated methods list |
+| CORS Headers | `allow_headers=["*"]` | Enumerated headers list |
+
+---
+
 ## Rationale
 
-### Why Permissive vs Restrictive?
+**Why Permissive CORS:**
+- Trusted environment with small user group → **Constraint:** MUST use permissive CORS policy (`allow_methods=["*"]`, `allow_headers=["*"]`)
+- Simple configuration reduces maintenance → **Constraint:** MUST use environment-configurable origins via `settings.get_allowed_origins()`
+- Credentials required for authenticated API → **Constraint:** MUST use `allow_credentials=True`
 
-**Permissive CORS (Chosen):**
-- ✅ **Trusted environment** - Small user group (10-20 people), known frontend
-- ✅ **Simple** - No enumeration of methods/headers
-- ✅ **Future-proof** - No updates when adding API features
-- ✅ **Low maintenance** - Set once, forget
-- ✅ **Low risk** - Frontend is controlled, not user-submitted
+**Why NOT Restrictive CORS:**
+- Restrictive CORS requires enumeration of methods/headers → **Violation:** More maintenance, brittle when API changes, no security benefit for trusted app
 
-**Restrictive CORS (Rejected):**
-- ❌ **More maintenance** - Update config when adding methods/headers
-- ❌ **Brittle** - May break if frontend adds headers (e.g., `Accept-Language`)
-- ❌ **No real security benefit** - Token auth is the actual security
-
-### Why `allow_credentials=True`?
-
-- Enables cookies (if needed later)
-- Enables `Authorization` header
-- Standard for authenticated APIs
-- **Requires exact origins** (not `["*"]`)
-
-### What CORS Protects (and Doesn't)
-
-**Protects:**
-- ✅ JavaScript on `evil.com` accessing `api.betzenstein.app` via browser
-- ✅ Cross-site data theft in browser
-
-**Does NOT protect:**
-- ❌ Direct API calls (curl, Postman) - CORS is browser-only
-- ❌ Server-to-server requests
-
-**Our actual security:**
-- Token authentication (HMAC-signed tokens)
-- Rate limiting (BR-012)
-- Input validation (Pydantic)
-- HTTPS only
-- **CORS is defense-in-depth**, not primary security
-
----
-
-## Alternatives Considered
-
-### Restrictive CORS (Enumerate Everything)
-
-```python
-allow_origins = ["https://betzenstein.app"]
-allow_methods = ["GET", "POST", "PATCH", "DELETE"]
-allow_headers = ["Content-Type", "Authorization"]
-```
-
-**Rejected:** More maintenance, no security benefit for trusted app.
-
----
-
-### No CORS (Same-Origin Only)
-
-**Rejected:** Breaks distributed architecture (Vercel ≠ Fly.io).
-
----
-
-### CORS Proxy
-
-**Architecture:** Browser → Vercel API Routes → Fly.io FastAPI
-
-**Rejected:**
-- Adds latency (extra hop)
-- More complex (proxy logic)
-- Loses stateless API benefit
-
----
+**Why NOT CORS Proxy:**
+- CORS proxy adds latency and complexity → **Violation:** Adds extra hop, loses stateless API benefit, violates simplicity requirement
 
 ## Consequences
 
-### Positive
+### MUST (Required)
 
-✅ **Simple configuration** - No enumeration needed
-✅ **Future-proof** - No updates when API changes
-✅ **Works in dev + prod** - Just change environment variable
-✅ **Low maintenance** - Set once, forget
+- MUST use permissive CORS policy (`allow_methods=["*"]`, `allow_headers=["*"]`) - Simple configuration, future-proof for trusted app
+- MUST use `allow_credentials=True` - Enables cookies and Authorization header for authenticated API
+- MUST use environment-configurable origins via `settings.get_allowed_origins()` - Works in dev + prod, supports multiple origins
 
-### Negative
+### MUST NOT (Forbidden)
 
-⚠️ **Permissive** - Allows all methods/headers (appropriate for trusted app)
-⚠️ **Environment-specific** - Must configure origins correctly
-⚠️ **Not suitable for public APIs** - Would need stricter policy
+- MUST NOT enumerate methods/headers - Violates permissive policy, creates maintenance burden
+- MUST NOT hardcode origins - Violates environment-configurable requirement
+- MUST NOT use CORS proxy - Violates simplicity requirement, adds latency
 
-### Neutral
+### Trade-offs
 
-➡️ **CORS is defense-in-depth** - Primary security is token auth + rate limiting
-➡️ **Browser-only** - Doesn't prevent direct API calls (by design)
+- Permissive policy allows all methods/headers - MUST use permissive policy for trusted app. MUST NOT use restrictive policy. Appropriate for small trusted user group.
+- CORS is defense-in-depth - MUST use CORS middleware. MUST NOT rely on CORS as primary security. Primary security is token auth + rate limiting (BR-012).
 
----
-
-## Implementation Pattern
-
-### Configuration
+### Code Examples
 
 ```python
-# app/core/config.py
-from pydantic_settings import BaseSettings
+# ✅ CORRECT: Permissive CORS configuration
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.get_allowed_origins(),  # Environment-configurable
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ❌ WRONG: Restrictive CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://betzenstein.app"],  # Hardcoded
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],  # Enumerated
+    allow_headers=["Content-Type", "Authorization"],  # Enumerated
+)
+```
+
+```python
+# ✅ CORRECT: Environment-configurable origins
 class Settings(BaseSettings):
     allowed_origins: str = "http://localhost:3000"
 
@@ -159,55 +125,49 @@ class Settings(BaseSettings):
             for origin in self.allowed_origins.split(",")
             if origin.strip()
         ]
+
+# ❌ WRONG: Hardcoded origins
+allow_origins = ["https://betzenstein.app"]
 ```
 
-### FastAPI Middleware
+### Applies To
 
-```python
-# app/main.py
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
+- ALL FastAPI middleware configuration (Phase 1)
+- File patterns: `app/main.py`, `app/core/config.py`
 
-app = FastAPI()
+### Validation Commands
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.get_allowed_origins(),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-```
+- `grep -r "allow_methods=\[" app/main.py` (should show `["*"]` - must use permissive)
+- `grep -r "allow_headers=\[" app/main.py` (should show `["*"]` - must use permissive)
+- `grep -r "allow_credentials" app/main.py` (should show `True` - must enable credentials)
 
-### Environment Variables
+---
 
-```bash
-# .env (development)
-ALLOWED_ORIGINS=http://localhost:3000
-
-# Production (Fly.io secrets)
-fly secrets set ALLOWED_ORIGINS=https://betzenstein.app
-
-# Multiple origins (dev + preview)
-ALLOWED_ORIGINS=http://localhost:3000,https://preview.vercel.app,https://betzenstein.app
-```
+**Related ADRs:**
+- [ADR-001](adr-001-backend-framework.md) - Backend Framework (FastAPI)
+- [ADR-002](adr-002-frontend-framework.md) - Frontend Framework (Next.js)
+- [ADR-015](adr-015-flyio-backend-hosting.md) - Fly.io Backend Hosting
+- [ADR-017](adr-017-vercel-frontend-hosting.md) - Vercel Frontend Hosting
+- [ADR-019](adr-019-authentication-authorization.md) - Authentication & Authorization
 
 ---
 
 ## References
 
 **Related ADRs:**
-- ADR-001: Backend Framework (FastAPI)
-- ADR-002: Frontend Framework (Next.js)
-- ADR-016: Fly.io Backend Hosting (backend domain)
-- ADR-017: Vercel Frontend Hosting (frontend domain)
-- ADR-019: Authentication & Authorization (token-based security)
+- [ADR-001](adr-001-backend-framework.md) - Backend Framework
+- [ADR-002](adr-002-frontend-framework.md) - Frontend Framework
+- [ADR-015](adr-015-flyio-backend-hosting.md) - Fly.io Backend Hosting
+- [ADR-017](adr-017-vercel-frontend-hosting.md) - Vercel Frontend Hosting
+- [ADR-019](adr-019-authentication-authorization.md) - Authentication & Authorization
 
 **Business Rules:**
-- BR-010: Token-based authentication (no cookies initially)
 - BR-012: Rate limiting (primary abuse prevention)
 
 **Tools:**
 - [FastAPI CORS Documentation](https://fastapi.tiangolo.com/tutorial/cors/)
 - [MDN: CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
+
+**Implementation:**
+- `app/main.py` - CORS middleware configuration
+- `app/core/config.py` - CORS origins configuration
