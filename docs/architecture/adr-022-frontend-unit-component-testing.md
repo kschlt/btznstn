@@ -1,4 +1,4 @@
-# ADR-023: Frontend Unit/Component Testing Framework
+# ADR-022: Frontend Unit/Component Testing Framework
 
 **Status:** Accepted
 **Date:** 2025-01-19

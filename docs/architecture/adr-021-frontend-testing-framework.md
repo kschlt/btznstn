@@ -84,7 +84,7 @@ Use **Playwright** as the frontend UI/E2E testing framework.
 
 **Related ADRs:**
 - [ADR-002](adr-002-frontend-framework.md) - Frontend Framework (Next.js + Playwright)
-- [ADR-023](adr-023-frontend-unit-component-testing.md) - Frontend Unit/Component Testing Framework
+- [ADR-022](adr-022-frontend-unit-component-testing.md) - Frontend Unit/Component Testing Framework
 
 **Workflow:**
 - [Test-First Workflow](../../docs/implementation/test-first-workflow.md) - Test-first development approach (BDD)
@@ -95,7 +95,7 @@ Use **Playwright** as the frontend UI/E2E testing framework.
 
 **Related ADRs:**
 - [ADR-002](adr-002-frontend-framework.md) - Frontend Framework (Next.js + Playwright)
-- [ADR-023](adr-023-frontend-unit-component-testing.md) - Frontend Unit/Component Testing Framework
+- [ADR-022](adr-022-frontend-unit-component-testing.md) - Frontend Unit/Component Testing Framework
 
 **Workflow:**
 - [Test-First Workflow](../../docs/implementation/test-first-workflow.md) - Test-first development approach (BDD)

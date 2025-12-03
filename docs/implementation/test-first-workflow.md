@@ -97,7 +97,7 @@ This document describes the **test-first development (BDD)** approach used in th
 **Testing Frameworks:**
 - [ADR-020](../../docs/architecture/adr-020-backend-testing-framework.md) - Backend Testing Framework (Pytest)
 - [ADR-021](../../docs/architecture/adr-021-frontend-testing-framework.md) - Frontend Testing Framework (Playwright)
-- [ADR-023](../../docs/architecture/adr-023-frontend-unit-component-testing.md) - Frontend Unit/Component Testing
+- [ADR-022](../../docs/architecture/adr-022-frontend-unit-component-testing.md) - Frontend Unit/Component Testing
 
 **Test Patterns:**
 - [ADR-009](../../docs/architecture/adr-009-test-data-factory-functions.md) - Test Data Factory Functions
