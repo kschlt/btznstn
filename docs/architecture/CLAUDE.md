@@ -114,21 +114,27 @@ If answers suggest multiple decisions, create multiple ADRs.
 
 ## How to Work with ADRs as an AI Agent
 
-### ADR Format: LLM-Actionable but Human-Reviewable
+### ADR Format: Human Decisions → LLM Constraints
 
-**ADRs serve dual purpose: LLM-actionable constraints AND human-reviewable reasoning.**
+**ADRs document human architectural decisions that become LLM constraints.**
+
+**Workflow:**
+1. **Humans make decisions** - Architects choose technologies/patterns
+2. **Humans document decisions** - Write ADR to capture the decision
+3. **Humans review ADRs** - Verify ADR accurately captures their decision
+4. **LLMs read decisions** - Read "Decision" section to understand what constraint to apply
+5. **LLMs apply constraints** - Use Decision + Constraints sections to enforce requirements
 
 **Format optimized for both audiences:**
 
-1. **Quick Reference** table at top (LLMs scan quickly, humans see overview)
-2. **Rationale** - Reasoning chain (decision → constraint → violation) for LLM understanding AND human review
-3. **Consequences** written as Implementation Constraints/Complexity Trade-offs (LLM-actionable constraints, human-reviewable trade-offs)
-4. **MUST/MUST NOT patterns** - Explicit constraints with code examples only when showing specific pitfalls
-5. **Concrete language** - "MUST" not "should" (LLMs parse better, humans understand clearly)
-6. **No redundancy** - Each section provides unique value, no duplicate code examples
-7. **Human-reviewable** - Context and reasoning preserved for human architects to review decisions
+1. **Decision** - Human's architectural choice (LLMs MUST read this to understand constraint)
+2. **Quick Reference** table - LLMs scan quickly, humans see overview
+3. **Rationale** - Human reasoning (decision → constraint → violation) for LLM understanding AND human review
+4. **Consequences** - LLM-actionable constraints derived from Decision (human-reviewable trade-offs)
+5. **MUST/MUST NOT patterns** - Explicit constraints with code examples only when showing specific pitfalls
+6. **Concrete language** - "MUST" not "should" (LLMs parse better, humans understand clearly)
 
-**Key principle:** Constraints must be LLM-actionable, but reasoning must be human-reviewable. Both audiences matter.
+**Key principle:** The "Decision" section is what humans made - LLMs MUST read it to understand what constraint to apply. Constraints are derived from the Decision.
 
 **Status:** 5/17 ADRs updated (ADR-001, ADR-006, ADR-010, ADR-013, ADR-019). Remaining ADRs are being systematically updated to this format.
 
@@ -142,11 +148,12 @@ If answers suggest multiple decisions, create multiple ADRs.
    - ⚠️ **"Superseded"** → Follow "Superseded by" link, check that ADR's status
    - ⚠️ **"Deprecated"** → Follow "Replaced by" link, check that ADR's status
    - ⏸️ **"Proposed"** → Skip (not yet binding)
-3. **Read Quick Reference** - Determine if ADR is relevant to your work
-4. **If relevant, read Constraints** - Consequences section contains MUST/MUST NOT patterns
-5. **Review Rationale** - Understand decision → constraint → violation chain
-6. **Follow constraints** - Treat Accepted ADRs as binding requirements
-7. **Never violate** - If ADR doesn't work, propose superseding ADR first
+3. **Read Decision section** - This is what humans decided, becomes your constraint
+4. **Read Quick Reference** - Determine if ADR is relevant to your work
+5. **Read Constraints** - Consequences section contains MUST/MUST NOT patterns derived from Decision
+6. **Review Rationale** - Understand decision → constraint → violation chain (helps apply constraints correctly)
+7. **Apply constraints** - Treat Accepted ADRs as binding requirements based on Decision
+8. **Never violate** - If ADR doesn't work, propose superseding ADR first
 
 **Code Examples in ADRs:**
 - Only included when showing **specific pitfalls** LLMs might take
@@ -155,13 +162,15 @@ If answers suggest multiple decisions, create multiple ADRs.
 
 **Example: Implementing email service**
 ```
-Step 1: Read Quick Reference table in ADR-004 (Email Service)
-Step 2: If relevant, read Consequences section (these ARE the constraints)
-Step 3: Follow MUST/MUST NOT patterns
-Step 4: See decision = Resend (MUST use Resend)
-Step 5: Use Resend (not SendGrid, not AWS SES)
-Step 6: If Resend doesn't work, propose ADR-011 to supersede ADR-004
+Step 1: Read ADR-004 (Email Service)
+Step 2: Check status = "Accepted" → Use constraints
+Step 3: Read Decision section → "Use Resend" (human's decision)
+Step 4: Read Constraints → MUST use Resend, MUST NOT use SendGrid/AWS SES
+Step 5: Apply constraint → Use Resend in implementation
+Step 6: If Resend doesn't work → Propose ADR-011 to supersede ADR-004
 ```
+
+**Key:** The Decision section tells you what humans chose - that becomes your constraint.
 
 ### ADRs as Constraints
 
