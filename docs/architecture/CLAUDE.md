@@ -109,40 +109,62 @@ If answers suggest multiple decisions, create multiple ADRs.
 
 ## How to Work with ADRs as an AI Agent
 
+### ADR Format: LLM-Tailored Constraints
+
+**All ADRs follow a standardized format optimized for LLM consumption:**
+
+1. **Consequences** reframed as Implementation Constraints/Complexity Trade-offs (not human-team concerns)
+2. **LLM Implementation Constraints** section with:
+   - MUST (absolute requirements)
+   - MUST NOT (forbidden anti-patterns)
+   - Code examples (correct vs wrong patterns)
+   - Applies To (which phases/specs affected)
+   - When Writing User Stories (guidance for spec generation)
+3. **Concrete language** - "MUST" not "should", specific constraints not vague guidance
+4. **No verbosity** - Direct, to-the-point constraints
+
+**Status:** 2/17 ADRs updated (ADR-001, ADR-010). Remaining ADRs are being systematically updated to this format.
+
 ### Before Implementing
 
 **ALWAYS check ADRs first:**
 1. Read relevant ADRs for the feature you're implementing
-2. Treat ADRs as **constraints**, not suggestions
-3. Never violate an ADR without proposing a superseding ADR
+2. Look for **LLM Implementation Constraints** section (if present, use it)
+3. If ADR lacks LLM constraints, read Consequences section and extract constraints
+4. Treat ADRs as **constraints**, not suggestions
+5. Never violate an ADR without proposing a superseding ADR
 
 **Example: Implementing email service**
 ```
 Step 1: Read ADR-004 (Email Service)
-Step 2: See decision = Resend
-Step 3: Use Resend (not SendGrid, not AWS SES)
-Step 4: If Resend doesn't work, propose ADR-011 to supersede ADR-004
+Step 2: Check for LLM Implementation Constraints section
+Step 3: If present, follow MUST/MUST NOT patterns
+Step 4: See decision = Resend (MUST use Resend)
+Step 5: Use Resend (not SendGrid, not AWS SES)
+Step 6: If Resend doesn't work, propose ADR-011 to supersede ADR-004
 ```
 
 ### ADRs as Constraints
 
-**These are NOT optional:**
-- ADR-001: Use FastAPI (not Flask, not Django)
-- ADR-002: Use Next.js App Router (not Pages Router, not Remix)
-- ADR-004: Use Resend for email (not SendGrid, not AWS SES)
-- ADR-005: Use Shadcn/ui + Tailwind (not Material UI, not Bootstrap)
-- ADR-006: Type safety with mypy + Pydantic + TypeScript + Zod
-- ADR-008: Test with Pytest + Playwright (not Jest, not Vitest)
-- ADR-009: Test patterns (repository pattern, factories, fixtures)
-- ADR-010: Naive datetime storage with Europe/Berlin timezone (not UTC, not timezone-aware)
-- ADR-011: Permissive CORS policy (allow_credentials, all methods/headers for trusted SPA)
-- ADR-012: Use PostgreSQL (not MySQL, not MongoDB)
-- ADR-013: Use SQLAlchemy (not Django ORM, not Tortoise ORM)
-- ADR-014: Use Alembic for migrations (not raw SQL, not other tools)
-- ADR-015: Database hosted on Fly.io Postgres (not Supabase, not RDS)
-- ADR-016: Backend hosted on Fly.io (not Heroku, not Railway)
-- ADR-017: Frontend hosted on Vercel (not Netlify, not Cloudflare Pages)
-- ADR-018: CI/CD via GitHub Actions (not GitLab CI, not CircleCI)
+**These are NOT optional - all ADRs define MUST/MUST NOT patterns:**
+
+- **ADR-001:** MUST use FastAPI (MUST NOT use Flask/Django) - ✅ Has LLM constraints
+- **ADR-002:** MUST use Next.js App Router (MUST NOT use Pages Router)
+- **ADR-004:** MUST use Resend (MUST NOT use SendGrid/AWS SES)
+- **ADR-005:** MUST use Shadcn/ui + Tailwind (MUST NOT use Material UI/Bootstrap)
+- **ADR-006:** MUST enforce type safety (mypy + Pydantic + TypeScript + Zod)
+- **ADR-008:** MUST use Pytest + Playwright (MUST NOT use Jest/Vitest)
+- **ADR-009:** MUST use factory pattern (MUST NOT use raw constructors)
+- **ADR-010:** MUST use naive datetime with Europe/Berlin (MUST NOT use UTC/timezone-aware) - ✅ Has LLM constraints
+- **ADR-011:** MUST use permissive CORS (allow_credentials for trusted SPA)
+- **ADR-012:** MUST use PostgreSQL (MUST NOT use MySQL/MongoDB)
+- **ADR-013:** MUST use SQLAlchemy (MUST NOT use Django ORM/Tortoise ORM)
+- **ADR-014:** MUST use Alembic (MUST NOT use raw SQL migrations)
+- **ADR-015:** MUST host database on Fly.io Postgres
+- **ADR-016:** MUST host backend on Fly.io
+- **ADR-017:** MUST host frontend on Vercel
+- **ADR-018:** MUST use GitHub Actions (MUST NOT use GitLab CI/CircleCI)
+- **ADR-019:** MUST use FastAPI dependencies for auth (MUST NOT use middleware/headers)
 
 **If you need to deviate:**
 1. STOP implementation
@@ -199,31 +221,33 @@ Ask yourself:
 
 ### Step 2: Use ADR Template
 
-**⚠️ CRITICAL: Keep ADRs concise (150-300 lines max). Focus on DECISION, not implementation.**
+**⚠️ CRITICAL: ADRs are LLM-actionable constraints, not human documentation.**
 
 **File naming:** `adr-{number}-{title}.md`
 - Number: Next available
 - Title: Kebab-case, descriptive
 
-**Strict Length Guidelines:**
-- **Target:** 150-250 lines
-- **Maximum:** 300 lines
-- **If longer:** Split into multiple ADRs or move details elsewhere
+**Strict Format Requirements:**
+- **LLM-tailored:** Constraints written for LLM agents, not human teams
+- **Concrete language:** Use "MUST" not "should", "MUST NOT" not "avoid"
+- **No verbosity:** Direct, to-the-point constraints
+- **No human-team language:** Remove "learning curve", "team needs to understand" etc.
 
 **What to include:**
 - ✅ Context (brief - why we need this decision)
 - ✅ Decision (clear statement of choice)
 - ✅ Rationale (why this vs alternatives)
-- ✅ Consequences (positive/negative/neutral)
-- ✅ Minimal implementation pattern (1-2 code examples max)
-- ✅ References (links to related docs)
+- ✅ Consequences (reframed as Implementation Constraints/Complexity Trade-offs)
+- ✅ **LLM Implementation Constraints** (MUST/MUST NOT with code examples)
+- ✅ Applies To (which phases/specs this affects)
+- ✅ When Writing User Stories (guidance for spec generation)
+- ✅ Minimal implementation pattern (correct vs wrong examples)
 
 **What to exclude:**
-- ❌ Detailed implementation guides (put in `/docs/design/` or `/docs/implementation/`)
-- ❌ Multiple code examples for every scenario
-- ❌ Testing strategies (put in implementation docs)
-- ❌ Step-by-step tutorials
-- ❌ "Summary for AI agents" sections (use CLAUDE.md instead)
+- ❌ Human-team language ("team needs to learn", "developers should understand")
+- ❌ Implementation checklists (belong in user stories, not ADRs)
+- ❌ Vague language ("should", "consider", "might want to")
+- ❌ Detailed tutorials (minimal reference examples only)
 
 **Template:**
 ```markdown
@@ -266,21 +290,72 @@ Ask yourself:
 
 ## Consequences
 
-### Positive
-✅ Benefit 1
-✅ Benefit 2
+### Implementation Constraints
 
-### Negative
-⚠️ Drawback 1
+✅ {What this decision ENFORCES across all implementations}
+✅ {Pattern that MUST always be followed}
+✅ {Library/approach that is REQUIRED}
+
+### Complexity Trade-offs
+
+⚠️ {Added complexity from this decision with specific constraint}
+⚠️ {Discipline required with exact pattern to follow}
 
 ### Neutral
-➡️ Trade-off 1
+
+➡️ {Trade-offs that aren't strictly positive or negative}
 
 ---
 
-## Implementation Notes
+## LLM Implementation Constraints
 
-{1-2 minimal code examples showing the pattern}
+**Purpose:** Absolute constraints from this architectural decision that MUST be enforced in all user stories and implementations.
+
+### Required Patterns
+
+**MUST:**
+- {Absolute requirement - framework/library to use}
+- {Pattern that MUST always be used}
+- {Import/module that is REQUIRED}
+
+**MUST NOT:**
+- {Anti-pattern that violates this ADR}
+- {Framework/library that conflicts with this decision}
+- {Common mistake from other approaches}
+
+**Example - Correct Pattern:**
+```{language}
+# Minimal example (2-5 lines) showing the constraint
+{Code showing required pattern}
+```
+
+**Example - WRONG (Anti-patterns):**
+```{language}
+# Example of what violates this ADR (2-5 lines)
+# ❌ WRONG: {Why this violates the constraint}
+{Code showing forbidden pattern}
+```
+
+### Applies To
+
+**This constraint affects:**
+- {Which phases this applies to}
+- {Which types of user stories need this constraint}
+- {Which specification files must reflect this}
+
+### When Writing User Stories
+
+**Ensure specifications include:**
+- {Constraint that must appear in acceptance criteria}
+- {Pattern that must be referenced in implementation notes}
+- {Validation command that belongs in user story checklist}
+
+**Related ADRs:**
+- [ADR-XXX](adr-xxx.md) - {How it relates}
+
+**Related Specifications:**
+- {Which spec files this decision affects}
+- {Which business rules this enables/constrains}
 
 ---
 
@@ -291,7 +366,7 @@ Ask yourself:
 **Implementation:** {file paths}
 ```
 
-**Example of good ADR:** ADR-010 (DateTime/Timezone) - 246 lines, focused
+**Example of good ADR:** ADR-001 (Backend Framework) and ADR-010 (DateTime/Timezone) - both have LLM Implementation Constraints sections
 
 ### Step 3: Propose to User
 
